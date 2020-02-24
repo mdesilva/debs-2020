@@ -3,9 +3,9 @@
 
 public class Utils {
 
-/***
- * Active Power P = \sum (v \times c) / 1000.
- ***/
+    /***
+     * Active Power P = \sum (v \times c) / 1000.
+     ***/
 
     public static Double calculateActivePower(Long[] voltage, Long[] current) throws Exception {
         Long ret = new Long(0);
@@ -18,6 +18,15 @@ public class Utils {
             ret = Math.addExact(temp, ret);
         }
         return (double) ret / period;
+    }
+
+    public static Double rootMeanSquare(Long[] vals) {
+        long squaresSum = 0;
+        for(long i:vals) {
+            squaresSum += Math.pow(i,2);
+        }
+        long meanSquaresSum = squaresSum / vals.length;
+        return Math.sqrt(meanSquaresSum);
     }
 
     /***
