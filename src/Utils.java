@@ -37,12 +37,19 @@ public class Utils {
      * Apparent Power S = voltage_RMS \times current_RMS
      ***/
 
-    public static Long calculateApparentPower(Long voltage, Long current){
-        return new Long(1);
+    public static Double calculateApparentPower(Long[] voltage, Long[] current) throws Exception{
+        if(voltage.length != current.length){
+            throw new Exception("Signals need the same length");
+        }
+        return rootMeanSquare(voltage) * rootMeanSquare(current);
     }
 
-    public static Long reactivePower(Long apparentPower, Long activePower){
-        return new Long(1);
+    /**
+     *
+     * Reactive Power Q = sqrt(apparent power^2 - active power^2)
+     */
+    public static Double calculateReactivePower(Long[] voltage, Long[] current) throws Exception {
+        return Math.sqrt((Math.pow(calculateApparentPower(voltage, current),2) - Math.pow(calculateActivePower(voltage, current), 2)));
     }
 
 
