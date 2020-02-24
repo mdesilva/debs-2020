@@ -55,10 +55,10 @@ public class Utils {
 
 
     public static void main(String args[]){
-        Long[] test1 = {1l,2l,3l};
-        Long[] test2 = {4l,5l,6l};
+        Long[] test1 = {15l,15l,10l};
+        Long[] test2 = {10l,10l,10l};
         try{
-            System.out.println(calculateActivePower(test1, test2));
+            System.out.println(calculateReactivePower(test1, test2));
         } catch (Exception e){
             System.out.println(e);
         }
