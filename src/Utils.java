@@ -20,6 +20,10 @@ public class Utils {
         return (double) ret / period;
     }
 
+    /**
+     * With n values {x1,x2,...,xn}
+     * Room Mean Square = sqrt(1/n(x1^2 + x2^2 + .... + xn^2))
+     */
     public static Double rootMeanSquare(Long[] vals) {
         long squaresSum = 0;
         for(long i:vals) {
