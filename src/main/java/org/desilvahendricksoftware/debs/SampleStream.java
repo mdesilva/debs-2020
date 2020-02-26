@@ -60,7 +60,7 @@ public class SampleStream {
 		 *
 		 */
 
-		DataStream<String> input = env.readTextFile("file:///Users/manujadesilva/Desktop/CS591DSPA/debs-2020-challenge/data.csv");
+		DataStream<String> input = env.readTextFile("/Users/manujadesilva/Desktop/CS591DSPA/debs/sample.csv");
 
 		DataStream<Integer> results = input
 				.map(new MapFunction<String, Integer>() {
