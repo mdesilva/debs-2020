@@ -26,11 +26,16 @@ import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.timestamps.AscendingTimestampExtractor;
+import org.apache.flink.streaming.api.functions.windowing.ProcessAllWindowFunction;
 import org.apache.flink.streaming.api.windowing.assigners.SlidingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
+import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
+import org.apache.flink.util.Collector;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 public class Query1 {
 
@@ -43,23 +48,53 @@ public class Query1 {
 		 * https://flink.apache.org/docs/latest/apis/streaming/index.html
 		 *
 		 */
-
-		DataStream<String> input = env.readTextFile("/Users/manujadesilva/Desktop/CS591DSPA/debs/dataset/in1.csv");
+		final int windowSize = 1000;
 
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
-		DataStream<Tuple3<Long, Float, Float>> parsed = input.map(new MapFunction<String, Tuple3<Long, Float, Float>>() {
+		DataStream<String> input = env.readTextFile(AppBase.pathToData);
+
+		DataStream<Tuple3<Long, Double, Double>> stream = input.map(new MapFunction<String, Tuple3<Long, Double, Double>>() {
 			@Override
-			public Tuple3<Long, Float, Float> map(String s) throws Exception {
+			//f0: id, f1; voltage, f2: current
+			public Tuple3<Long, Double, Double> map(String s) throws Exception {
 				String[] currentLine = s.split(",");
 				Long id = Long.parseLong(currentLine[0]);
-				Float voltage = Float.parseFloat(currentLine[1]);
-				Float current = Float.parseFloat(currentLine[2]);
-				Tuple3<Long, Float, Float> ret = new Tuple3<>(id,voltage,current);
-				System.out.println(ret);
+				Double voltage = Double.parseDouble(currentLine[1]);
+				Double current = Double.parseDouble(currentLine[2]);
+				Tuple3<Long, Double, Double> ret = new Tuple3<>(id,voltage,current);
 				return ret;
 			}
-		});
+			})
+			.assignTimestampsAndWatermarks(new AscendingTimestampExtractor<Tuple3<Long, Double, Double>>() {
+				@Override
+				public long extractAscendingTimestamp(Tuple3<Long, Double, Double> element) {
+					return element.f0;
+				}
+			});
+
+		DataStream<Tuple2<Double, Double>> features = stream
+				.windowAll(SlidingEventTimeWindows.of(Time.milliseconds(windowSize), Time.milliseconds(windowSize)))
+				.process(new ProcessAllWindowFunction<Tuple3<Long, Double, Double>, Tuple2<Double, Double>, TimeWindow>() {
+					@Override
+					public void process(Context context, Iterable<Tuple3<Long, Double, Double>> iterable, Collector<Tuple2<Double, Double>> collector) throws Exception {
+						Double[] voltages = new Double[windowSize];
+						Double[] currents = new Double[windowSize];
+						int index = 0;
+						for (Tuple3<Long,Double, Double> element: iterable) {
+							voltages[index] = element.f1;
+							currents[index] = element.f2;
+							index++;
+						}
+
+						//calculate active and reactive power features
+						double activePower = main.Utils.calculateActivePower(voltages, currents);
+						double reactivePower = main.Utils.calculateReactivePower(voltages, currents);
+						Tuple2<Double, Double> ret = new Tuple2<>(activePower, reactivePower);
+						System.out.println(ret);
+						collector.collect(ret);
+					}
+				});
 
 		// execute program
 		env.execute("Flink Streaming Java API Skeleton");
