@@ -73,11 +73,11 @@ public class Query1 {
 				}
 			});
 
-		DataStream<Tuple2<Double, Double>> features = stream
+		DataStream<Tuple2<double[], double[]>> features = stream
 				.windowAll(SlidingEventTimeWindows.of(Time.milliseconds(windowSize), Time.milliseconds(windowSize)))
-				.process(new ProcessAllWindowFunction<Tuple3<Long, Double, Double>, Tuple2<Double, Double>, TimeWindow>() {
+				.process(new ProcessAllWindowFunction<Tuple3<Long, Double, Double>, Tuple2<double[], double[]>, TimeWindow>() {
 					@Override
-					public void process(Context context, Iterable<Tuple3<Long, Double, Double>> iterable, Collector<Tuple2<Double, Double>> collector) throws Exception {
+					public void process(Context context, Iterable<Tuple3<Long, Double, Double>> iterable, Collector<Tuple2<double[], double[]>> collector) throws Exception {
 						Double[] voltages = new Double[windowSize];
 						Double[] currents = new Double[windowSize];
 						int index = 0;
@@ -88,9 +88,9 @@ public class Query1 {
 						}
 
 						//calculate active and reactive power features
-						double activePower = main.Utils.calculateActivePower(voltages, currents);
-						double reactivePower = main.Utils.calculateReactivePower(voltages, currents);
-						Tuple2<Double, Double> ret = new Tuple2<>(activePower, reactivePower);
+						double[] activePower = Utils.calculateActivePower(voltages, currents);
+						double[] reactivePower = Utils.calculateReactivePower(voltages, currents);
+						Tuple2<double[], double[]> ret = new Tuple2<>(activePower, reactivePower);
 						System.out.println(ret);
 						collector.collect(ret);
 					}

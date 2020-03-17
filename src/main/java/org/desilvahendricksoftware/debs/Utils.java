@@ -9,26 +9,26 @@ public class Utils {
      * Active Power P = \sum (v \times c) / 1000.
      ***/
 
-    public static double[] calculateActivePower(Long[] voltage, Long[] current) throws Exception {
-        Long ret = new Long(0);
+    public static double[] calculateActivePower(Double[] voltage, Double[] current) throws Exception {
+        Double ret = new Double(0);
         if (voltage.length != current.length) {
             throw new Exception("Signals need the same length");
         }
         int period = voltage.length; // should be a 1000
         for (int i = 0; i < period; i++) {
-            Long temp = Math.multiplyExact(voltage[i], current[i]);
-            ret = Math.addExact(temp, ret);
+            Double temp = voltage[i] *  current[i];
+            ret += temp;
         }
-        return new double[]{(double) ret / period};
+        return new double[]{ ret / period};
     }
 
     /**
      * With n values {x1,x2,...,xn}
      * Room Mean Square = sqrt(1/n(x1^2 + x2^2 + .... + xn^2))
      */
-    public static double[] rootMeanSquare(Long[] vals) {
+    public static double[] rootMeanSquare(Double[] vals) {
         long squaresSum = 0;
-        for (long i : vals) {
+        for (double i : vals) {
             squaresSum += Math.pow(i, 2);
         }
         long meanSquaresSum = squaresSum / vals.length;
@@ -39,7 +39,7 @@ public class Utils {
      * Apparent Power S = voltage_RMS \times current_RMS
      ***/
 
-    public static double[] calculateApparentPower(Long[] voltage, Long[] current) throws Exception {
+    public static double[] calculateApparentPower(Double[] voltage, Double[] current) throws Exception {
         if (voltage.length != current.length) {
             throw new Exception("Signals need the same length");
         }
@@ -55,7 +55,7 @@ public class Utils {
     /**
      * Reactive Power Q = sqrt(apparent power^2 - active power^2)
      */
-    public static double[] calculateReactivePower(Long[] voltage, Long[] current) throws Exception {
+    public static double[] calculateReactivePower(Double[] voltage, Double[] current) throws Exception {
         if (voltage.length != current.length) {
             throw new Exception("Signals need the same length");
         }
