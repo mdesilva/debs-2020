@@ -96,6 +96,8 @@ public class Query1 {
 					}
 				});
 
+		//now we need to feed these features into a window of increasing size. On that window,apply the DBSCAN algorithm
+
 		// execute program
 		env.execute("Flink Streaming Java API Skeleton");
 	}

@@ -1,0 +1,14 @@
+package org.desilvahendricksoftware.debs;
+
+public class NonInterleavingClusterPair {
+
+    Cluster c1;
+    Cluster c2;
+    int[] event_interval_t;
+
+    public NonInterleavingClusterPair(Cluster c1, Cluster c2, int[] event_interval_t) {
+        this.c1 = c1;
+        this.c2 = c2;
+        this.event_interval_t = event_interval_t;
+    }
+}
