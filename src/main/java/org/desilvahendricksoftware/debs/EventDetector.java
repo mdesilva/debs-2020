@@ -6,6 +6,7 @@ public class EventDetector {
 
     Cluster[] clusters;
     float temporalLocalityEpsilon;
+    float lossThreshold;
 
     public NonInterleavingClusterPair[] check_event_model_constraints() {
 
@@ -107,5 +108,57 @@ public class EventDetector {
         }
 
     }
+    /*
+    Compute the loss values of different non-interleaving cluster pairs.
+    Return the cluster pair with the minimum loss value
+     */
+    public NonInterleavingClusterPair compute_and_evaluate_loss(NonInterleavingClusterPair[] checked_clusters) {
+        for (int i=0;i<checked_clusters.length;i++) {
+            int lower_event_bound_u = checked_clusters[i].event_interval_t[0] - 1;
+            int upper_event_bound_v = checked_clusters[i].event_interval_t[-1] + 1;
+            int[] c1_indices = checked_clusters[i].c1.memberIndices;
+            int[] c2_indices = checked_clusters[i].c2.memberIndices;
+            int[] c1_and_c2_indices = MiscUtils.concat(c1_indices, c2_indices);
+            int numC2SamplesLessThanLowerBound = 0;
+            int numC1SamplesGreaterThanUpperBound = 0;
+            int numSamplesInBetweenBounds = 0;
 
+            //get all c2 samples less than or equal to the lower bound u
+            for (int j=0; j<c2_indices.length; j++) {
+                if (c2_indices[i] <= lower_event_bound_u) {
+                    numC2SamplesLessThanLowerBound++;
+                }
+            }
+
+            //get all c1 samples greater than or equal to upper bound v
+            for (int k=0; k<c1_indices.length; k++) {
+                if (c1_indices[k] >= upper_event_bound_v) {
+                    numC1SamplesGreaterThanUpperBound++;
+                }
+            }
+
+            for (int l=0; l<c1_and_c2_indices.length;l++) {
+                if (c1_and_c2_indices[l] > lower_event_bound_u && c1_and_c2_indices[l] < upper_event_bound_v) {
+                    numSamplesInBetweenBounds++;
+                }
+            }
+            checked_clusters[i].setModelLoss(numC2SamplesLessThanLowerBound + numC1SamplesGreaterThanUpperBound + numSamplesInBetweenBounds);
+        }
+
+        //get the cluster pair with the smallest model loss
+        int leastModelLoss = checked_clusters[0].eventModelLoss;
+        NonInterleavingClusterPair clusterWithLeastModelLoss = checked_clusters[0];
+
+        for (NonInterleavingClusterPair clusterPair: checked_clusters) {
+            if (clusterPair.eventModelLoss < leastModelLoss) {
+             clusterWithLeastModelLoss = clusterPair;
+            }
+        }
+
+        if (clusterWithLeastModelLoss.eventModelLoss <= this.lossThreshold) {
+            return clusterWithLeastModelLoss;
+        } else {
+            return null;
+        }
+    }
 }
