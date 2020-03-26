@@ -65,7 +65,6 @@ public class Clustering {
 
 
     public static void main (String args[]){
-        System.out.println("esketit");
         final DoublePoint[] points = {
                 new DoublePoint(new double[] { 83.08303244924173, 58.83387754182331 }),
                 new DoublePoint(new double[] { 45.05445510940626, 23.469642649637535 }),

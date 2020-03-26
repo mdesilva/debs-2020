@@ -14,11 +14,16 @@ public class Cluster {
         this.v = v;
         this.loc = loc;
     }
+    public Cluster(){}
 
     public static Cluster getNoiseCluster(Cluster[] clusters) {
         for (Cluster i: clusters) {
             if (i.clusterNum == -1) return i;
         }
         return null;
+    }
+
+    public float compute_temporal_locality() {
+        return this.memberIndices.length / (this.v - this.u + 1);
     }
 }
