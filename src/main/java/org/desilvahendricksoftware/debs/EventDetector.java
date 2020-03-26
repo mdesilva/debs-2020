@@ -1,10 +1,13 @@
 package org.desilvahendricksoftware.debs;
 
+import org.apache.flink.api.java.tuple.Tuple2;
+
 import java.util.ArrayList;
 
 public class EventDetector {
 
     Cluster[] clusters;
+    Cluster[] forward_pass_clusters;
     float temporalLocalityEpsilon;
     float lossThreshold;
 
@@ -118,7 +121,7 @@ public class EventDetector {
             int upper_event_bound_v = checked_clusters[i].event_interval_t[-1] + 1;
             int[] c1_indices = checked_clusters[i].c1.memberIndices;
             int[] c2_indices = checked_clusters[i].c2.memberIndices;
-            int[] c1_and_c2_indices = MiscUtils.concat(c1_indices, c2_indices);
+            int[] c1_and_c2_indices = ArrayUtils.concat(c1_indices, c2_indices);
             int numC2SamplesLessThanLowerBound = 0;
             int numC1SamplesGreaterThanUpperBound = 0;
             int numSamplesInBetweenBounds = 0;
@@ -160,5 +163,54 @@ public class EventDetector {
         } else {
             return null;
         }
+    }
+
+    public int[] dbscan_fit_placeholder(Tuple2<Double, Double>[] X) {
+        return new int[] {0,1};
+    }
+
+    public void update_clustering_structure(Tuple2<Double, Double>[] X) {
+        int[] clusters_X = dbscan_fit_placeholder(X);
+        int[] cluster_labels = ArrayUtils.unique(clusters_X);
+        Cluster[] clusters = new Cluster[cluster_labels.length];
+        int index = 0;
+        for (int cluster_label: cluster_labels) {
+            Cluster cluster = new Cluster();
+            ArrayList<Integer> member_indices = new ArrayList<Integer>();
+            for (int i=0; i<clusters_X.length; i++) {
+                if (cluster_label == clusters_X[i]) {
+                    member_indices.add(i);
+                }
+            }
+            cluster.memberIndices = ArrayUtils.toArray(member_indices);
+            cluster.u = ArrayUtils.min(cluster.memberIndices);
+            cluster.v = ArrayUtils.max(cluster.memberIndices);
+            cluster.loc = cluster.compute_temporal_locality();
+            clusters[index] = cluster;
+            index++;
+        }
+        this.clusters = clusters;
+    }
+
+    public void predict(Tuple2<Double, Double>[] X) {
+        boolean event_detected = false;
+        this.update_clustering_structure(X);
+        NonInterleavingClusterPair[] checked_clusters = this.check_event_model_constraints();
+        if (checked_clusters.length == 0) {
+            return;
+        } else {
+            NonInterleavingClusterPair event_cluster_combination_with_least_loss = this.compute_and_evaluate_loss(checked_clusters);
+            this.forward_pass_clusters = this.clusters;
+            if (event_cluster_combination_with_least_loss != null) {
+                event_detected = true; //exit loop
+            } else {
+                return; //continue loop
+            }
+        }
+
+        if (event_detected) {
+            //begin backwards pass
+        }
+
     }
 }
