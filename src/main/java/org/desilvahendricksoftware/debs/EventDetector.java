@@ -201,7 +201,7 @@ public class EventDetector {
         this.clusters = clusters;
     }
 
-    public NonInterleavingClusterPair predict(Tuple2<Double, Double>[] X) {
+    public int[] predict(Tuple2<Double, Double>[] X) {
         //Forward pass
         this.update_clustering_structure(X); //step 2
         NonInterleavingClusterPair[] valid_cluster_pairs = this.check_event_model_constraints(); //step 2a
@@ -209,14 +209,16 @@ public class EventDetector {
             return null; //We need at least one cluster pair to continue (e.g no event was detected). Return null and take the next sample
         }
         //Event detected, so now return the cluster pair with the least model loss
-        NonInterleavingClusterPair event_cluster_pair_with_least_loss = this.compute_and_evaluate_loss(valid_cluster_pairs); //step 3
-        if (event_cluster_pair_with_least_loss == null) {
+        NonInterleavingClusterPair forward_pass_event_cluster_pair_with_least_loss = this.compute_and_evaluate_loss(valid_cluster_pairs); //step 3
+        if (forward_pass_event_cluster_pair_with_least_loss == null) {
             return null; //No cluster pair was found with model loss < loss threshold. Return null and take the next sample
         } else {
             //Begin backwards pass if we found a non interleaving cluster pair with loss < loss threshold
             this.forward_pass_clusters = this.clusters;
             this.backward_pass_clusters = this.forward_pass_clusters;
+            NonInterleavingClusterPair last_known_valid_event_cluster_pair_with_least_loss = forward_pass_event_cluster_pair_with_least_loss;
             for (int i = 0; i < X.length; i++) {
+                Tuple2<Double, Double> sample_to_be_cut = X[0];
                 Tuple2<Double, Double>[] X_cut = Arrays.copyOfRange(X, i + 1, X.length); //step 5
                 this.update_clustering_structure(X_cut); //step 6
 
@@ -225,17 +227,20 @@ public class EventDetector {
                 if (backward_pass_checked_clusters == null) {
                     break;
                 } else {
-                    //Compute the model loss
-                    NonInterleavingClusterPair backward_pass_event_cluster_pair_with_least_loss = this.compute_and_evaluate_loss(backward_pass_checked_clusters);
-                    if (backward_pass_event_cluster_pair_with_least_loss == null) {
-                        //Without the last sample, no event is detected.
+                    NonInterleavingClusterPair current_backward_pass_event_cluster_pair_with_least_loss = this.compute_and_evaluate_loss(backward_pass_checked_clusters);
+                    if (current_backward_pass_event_cluster_pair_with_least_loss == null) {
+                        // Without the last sample, no event is detected.
                         // TODO: Reinsert the last sample into the window
-                        // Return the balanced cluster pair
-                        return event_cluster_pair_with_least_loss;
+                        //this.update_clustering_structure();
+                        break;
+                    } else {
+                        last_known_valid_event_cluster_pair_with_least_loss = current_backward_pass_event_cluster_pair_with_least_loss;
+                        continue;
                     }
                 }
             }
-            return null;
+            System.out.println("Event detected at " + last_known_valid_event_cluster_pair_with_least_loss.event_interval_t);
+            return last_known_valid_event_cluster_pair_with_least_loss.event_interval_t;
         }
     }
 }
