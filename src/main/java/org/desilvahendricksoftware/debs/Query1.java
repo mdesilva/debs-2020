@@ -26,6 +26,7 @@ import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.streaming.api.functions.timestamps.AscendingTimestampExtractor;
 import org.apache.flink.streaming.api.functions.windowing.ProcessAllWindowFunction;
 import org.apache.flink.streaming.api.windowing.assigners.SlidingEventTimeWindows;
@@ -34,7 +35,9 @@ import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.util.Collector;
 
+import java.awt.*;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 public class Query1 {
@@ -49,6 +52,12 @@ public class Query1 {
 		 *
 		 */
 		final int windowSize = 1000;
+
+		ArrayList<Tuple2<Double, Double>> X = new ArrayList<>(); //TODO: Determine how to correctly store a list of features.
+		final int currentWindowId = 0;
+
+		/* Using hyperparameters from Python solution for now */
+		EventDetector eventDetector = new EventDetector(0.03, 2, 0.8, 40);
 
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
@@ -73,11 +82,11 @@ public class Query1 {
 				}
 			});
 
-		DataStream<Tuple2<double[], double[]>> features = stream
+		DataStream<Tuple2<Double, Double>> features = stream
 				.windowAll(SlidingEventTimeWindows.of(Time.milliseconds(windowSize), Time.milliseconds(windowSize)))
-				.process(new ProcessAllWindowFunction<Tuple3<Long, Double, Double>, Tuple2<double[], double[]>, TimeWindow>() {
+				.process(new ProcessAllWindowFunction<Tuple3<Long, Double, Double>, Tuple2<Double, Double>, TimeWindow>() {
 					@Override
-					public void process(Context context, Iterable<Tuple3<Long, Double, Double>> iterable, Collector<Tuple2<double[], double[]>> collector) throws Exception {
+					public void process(Context context, Iterable<Tuple3<Long, Double, Double>> iterable, Collector<Tuple2<Double, Double>> collector) throws Exception {
 						Double[] voltages = new Double[windowSize];
 						Double[] currents = new Double[windowSize];
 						int index = 0;
@@ -88,15 +97,23 @@ public class Query1 {
 						}
 
 						//calculate active and reactive power features
-						double[] activePower = Utils.calculateActivePower(voltages, currents);
-						double[] reactivePower = Utils.calculateReactivePower(voltages, currents);
-						Tuple2<double[], double[]> ret = new Tuple2<>(activePower, reactivePower);
-						System.out.println(ret);
+						double activePower = Utils.calculateActivePower(voltages, currents);
+						double reactivePower = Utils.calculateReactivePower(voltages, currents);
+						Tuple2<Double, Double> ret = new Tuple2<>(activePower, reactivePower);
+						// System.out.println(ret);
 						collector.collect(ret);
 					}
 				});
 
-		//now we need to feed these features into a window of increasing size. On that window,apply the DBSCAN algorithm
+		//now we need to feed these features into a window of increasing size. On that window,apply the predict function
+		DataStream<Tuple2<Integer, Integer>> stream2 = features
+				.process(new ProcessFunction<Tuple2<Double,Double>, Tuple2<Integer, Integer>>() {
+					@Override
+					public void processElement(Tuple2<Double, Double> x_n, Context context, Collector<Tuple2<Integer, Integer>> out) throws Exception {
+						X.add(x_n);
+						//TODO: Call EventDetector's predict function
+					}
+				});
 
 		// execute program
 		env.execute("Flink Streaming Java API Skeleton");

@@ -10,8 +10,15 @@ public class EventDetector {
     Cluster[] clusters;
     Cluster[] forward_pass_clusters;
     Cluster[] backward_pass_clusters;
-    float temporalLocalityEpsilon;
-    float lossThresholdLambda;
+    DBSCAN dbscan;
+    double temporalLocalityEpsilon;
+    double lossThresholdLambda;
+
+    public EventDetector(double dbscan_epsilon, int dbscan_minPoints, double temporalLocalityEpsilon, double lossThresholdLambda) {
+        this.temporalLocalityEpsilon = temporalLocalityEpsilon;
+        this.lossThresholdLambda = lossThresholdLambda;
+        this.dbscan = new DBSCAN(dbscan_epsilon, dbscan_minPoints);
+    }
 
     /*
     Take the clusters outputted by the DBSCAN algorithm, and perform the following checks:
@@ -174,12 +181,8 @@ public class EventDetector {
         }
     }
 
-    public int[] dbscan_fit_placeholder(Tuple2<Double, Double>[] X) {
-        return new int[]{0, 1};
-    }
-
     public void update_clustering_structure(Tuple2<Double, Double>[] X) {
-        int[] clusters_X = dbscan_fit_placeholder(X);
+        int[] clusters_X = this.dbscan.performDBSCAN(X);
         int[] cluster_labels = ArrayUtils.unique(clusters_X);
         Cluster[] clusters = new Cluster[cluster_labels.length];
         int index = 0;
@@ -201,17 +204,19 @@ public class EventDetector {
         this.clusters = clusters;
     }
 
-    public int[] predict(Tuple2<Double, Double>[] X) {
+    public Tuple2<Integer, Integer> predict(int windowId, Tuple2<Double, Double>[] X) {
         //Forward pass
         this.update_clustering_structure(X); //step 2
         NonInterleavingClusterPair[] valid_cluster_pairs = this.check_event_model_constraints(); //step 2a
         if (valid_cluster_pairs.length == 0) {
-            return null; //We need at least one cluster pair to continue (e.g no event was detected). Return null and take the next sample
+            System.out.println(windowId + ", 0");
+            return new Tuple2<>(windowId, 0); //We need at least one cluster pair to continue (e.g no event was detected). Return and take the next sample
         }
         //Event detected, so now return the cluster pair with the least model loss
         NonInterleavingClusterPair forward_pass_event_cluster_pair_with_least_loss = this.compute_and_evaluate_loss(valid_cluster_pairs); //step 3
         if (forward_pass_event_cluster_pair_with_least_loss == null) {
-            return null; //No cluster pair was found with model loss < loss threshold. Return null and take the next sample
+            System.out.println(windowId + ", 0");
+            return new Tuple2<>(windowId, 0); //No cluster pair was found with model loss < loss threshold. Return and take the next sample
         } else {
             //Begin backwards pass if we found a non interleaving cluster pair with loss < loss threshold
             this.forward_pass_clusters = this.clusters;
@@ -239,8 +244,9 @@ public class EventDetector {
                     }
                 }
             }
-            System.out.println("Event detected at " + last_known_valid_event_cluster_pair_with_least_loss.event_interval_t);
-            return last_known_valid_event_cluster_pair_with_least_loss.event_interval_t;
+            //System.out.println("Event detected at " + last_known_valid_event_cluster_pair_with_least_loss.event_interval_t);
+            System.out.println(windowId + ", 1");
+            return new Tuple2<>(windowId, 1);
         }
     }
 }
