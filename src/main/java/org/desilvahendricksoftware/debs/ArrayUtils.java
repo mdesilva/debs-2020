@@ -1,5 +1,7 @@
 package org.desilvahendricksoftware.debs;
 
+import org.apache.flink.api.java.tuple.Tuple3;
+
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 
@@ -64,4 +66,5 @@ public class ArrayUtils {
         }
         return max;
     }
+
 }

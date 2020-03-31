@@ -53,7 +53,7 @@ public class Query1 {
 		 */
 		final int windowSize = 1000;
 
-		ArrayList<Tuple2<Double, Double>> X = new ArrayList<>(); //TODO: Determine how to correctly store a list of features.
+		ArrayList<Tuple2<Double, Double>> w2_builder = new ArrayList<>(); //TODO: Determine how to correctly store a list of features.
 		final int currentWindowId = 0;
 
 		/* Using hyperparameters from Python solution for now */
@@ -82,11 +82,11 @@ public class Query1 {
 				}
 			});
 
-		DataStream<Tuple2<Double, Double>> features = stream
+		DataStream<Tuple3<Long, Double, Double>> features = stream
 				.windowAll(SlidingEventTimeWindows.of(Time.milliseconds(windowSize), Time.milliseconds(windowSize)))
-				.process(new ProcessAllWindowFunction<Tuple3<Long, Double, Double>, Tuple2<Double, Double>, TimeWindow>() {
+				.process(new ProcessAllWindowFunction<Tuple3<Long, Double, Double>, Tuple3<Long, Double, Double>, TimeWindow>() {
 					@Override
-					public void process(Context context, Iterable<Tuple3<Long, Double, Double>> iterable, Collector<Tuple2<Double, Double>> collector) throws Exception {
+					public void process(Context context, Iterable<Tuple3<Long, Double, Double>> iterable, Collector<Tuple3<Long, Double, Double>> collector) throws Exception {
 						Double[] voltages = new Double[windowSize];
 						Double[] currents = new Double[windowSize];
 						int index = 0;
@@ -95,23 +95,23 @@ public class Query1 {
 							currents[index] = element.f2;
 							index++;
 						}
-
 						//calculate active and reactive power features
 						double activePower = Utils.calculateActivePower(voltages, currents);
 						double reactivePower = Utils.calculateReactivePower(voltages, currents);
-						Tuple2<Double, Double> ret = new Tuple2<>(activePower, reactivePower);
-						// System.out.println(ret);
+						Tuple3<Long, Double, Double> ret = new Tuple3<>(context.window().getEnd(), activePower, reactivePower);
+						//System.out.println(ret);
 						collector.collect(ret);
 					}
 				});
 
+
 		//now we need to feed these features into a window of increasing size. On that window,apply the predict function
 		DataStream<Tuple2<Integer, Integer>> stream2 = features
-				.process(new ProcessFunction<Tuple2<Double,Double>, Tuple2<Integer, Integer>>() {
+				.process(new ProcessFunction<Tuple3<Long,Double,Double>, Tuple2<Integer, Integer>>() {
 					@Override
-					public void processElement(Tuple2<Double, Double> x_n, Context context, Collector<Tuple2<Integer, Integer>> out) throws Exception {
-						X.add(x_n);
-						//TODO: Call EventDetector's predict function
+					public void processElement(Tuple3<Long, Double, Double> x_n, Context context, Collector<Tuple2<Integer, Integer>> out) throws Exception {
+						w2_builder.add(new Tuple2<>(x_n.f1, x_n.f2));
+						out.collect(eventDetector.predict(x_n.f0, w2_builder.toArray(new Tuple2[w2_builder.size()])));
 					}
 				});
 

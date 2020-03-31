@@ -204,7 +204,7 @@ public class EventDetector {
         this.clusters = clusters;
     }
 
-    public Tuple2<Integer, Integer> predict(int windowId, Tuple2<Double, Double>[] X) {
+    public Tuple2<Long, Integer> predict(long windowId, Tuple2<Double, Double>[] X) {
         //Forward pass
         this.update_clustering_structure(X); //step 2
         NonInterleavingClusterPair[] valid_cluster_pairs = this.check_event_model_constraints(); //step 2a
