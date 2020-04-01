@@ -209,7 +209,7 @@ public class EventDetector implements Serializable {
         //Forward pass
         this.update_clustering_structure(X); //step 2
         NonInterleavingClusterPair[] valid_cluster_pairs = this.check_event_model_constraints(); //step 2a
-        if (valid_cluster_pairs.length == 0) {
+        if (valid_cluster_pairs == null || valid_cluster_pairs.length == 0) {
             System.out.println(windowId + ", 0");
             return new Tuple2<>(windowId, 0); //We need at least one cluster pair to continue (e.g no event was detected). Return and take the next sample
         }
