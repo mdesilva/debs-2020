@@ -2,10 +2,11 @@ package org.desilvahendricksoftware.debs;
 
 import org.apache.flink.api.java.tuple.Tuple2;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class EventDetector {
+public class EventDetector implements Serializable {
 
     Cluster[] clusters;
     Cluster[] forward_pass_clusters;
