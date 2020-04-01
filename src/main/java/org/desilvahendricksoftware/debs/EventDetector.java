@@ -1,5 +1,6 @@
 package org.desilvahendricksoftware.debs;
 
+import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
 
 import java.io.Serializable;
@@ -57,6 +58,8 @@ public class EventDetector implements Serializable {
         if (checkTwoClustersBuilder.size() < 2) {
             return null;
         }
+
+        //System.out.println("Passed check 2");
 
         Cluster[] checkTwoClusters = checkTwoClustersBuilder.toArray(new Cluster[checkTwoClustersBuilder.size()]);
 
@@ -205,19 +208,23 @@ public class EventDetector implements Serializable {
         this.clusters = clusters;
     }
 
-    public Tuple2<Long, Integer> predict(long windowId, Tuple2<Double, Double>[] X) {
+    public Tuple2<Long, Double> predict(long windowId, Tuple2<Double, Double>[] X) {
         //Forward pass
         this.update_clustering_structure(X); //step 2
+        for (int i = 0; i < this.clusters.length; i++) {
+            this.clusters[i].toString();
+        }
+        //System.out.println(this.clusters.length);
+
         NonInterleavingClusterPair[] valid_cluster_pairs = this.check_event_model_constraints(); //step 2a
         if (valid_cluster_pairs == null || valid_cluster_pairs.length == 0) {
-            System.out.println(windowId + ", 0");
-            return new Tuple2<>(windowId, 0); //We need at least one cluster pair to continue (e.g no event was detected). Return and take the next sample
+            //System.out.println("No valid clusters found");
+            return new Tuple2(windowId, 0); //We need at least one cluster pair to continue (e.g no event was detected). Return and take the next sample
         }
         //Event detected, so now return the cluster pair with the least model loss
         NonInterleavingClusterPair forward_pass_event_cluster_pair_with_least_loss = this.compute_and_evaluate_loss(valid_cluster_pairs); //step 3
         if (forward_pass_event_cluster_pair_with_least_loss == null) {
-            System.out.println(windowId + ", 0");
-            return new Tuple2<>(windowId, 0); //No cluster pair was found with model loss < loss threshold. Return and take the next sample
+            return new Tuple2(windowId, 0); //No cluster pair was found with model loss < loss threshold. Return and take the next sample
         } else {
             //Begin backwards pass if we found a non interleaving cluster pair with loss < loss threshold
             this.forward_pass_clusters = this.clusters;
@@ -246,8 +253,7 @@ public class EventDetector implements Serializable {
                 }
             }
             //System.out.println("Event detected at " + last_known_valid_event_cluster_pair_with_least_loss.event_interval_t);
-            System.out.println(windowId + ", 1");
-            return new Tuple2<>(windowId, 1);
+            return new Tuple2(windowId, 1);
         }
     }
 }

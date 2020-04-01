@@ -62,10 +62,7 @@ public class Query1 {
 		EventDetector eventDetector = new EventDetector(0.03, 2, 0.8, 40);
 
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
-
-
-
-
+		env.setParallelism(1);
 		DataStream<String> input = env.readTextFile(AppBase.pathToData);
 
 		DataStream<Tuple3<Long, Double, Double>> stream = input.map(new MapFunction<String, Tuple3<Long, Double, Double>>() {
@@ -104,20 +101,20 @@ public class Query1 {
 						double activePower = Utils.calculateActivePower(voltages, currents);
 						double reactivePower = Utils.calculateReactivePower(voltages, currents);
 						Tuple3<Long, Double, Double> ret = new Tuple3<>(context.window().getEnd(), activePower, reactivePower);
-						//System.out.println(ret);
 						collector.collect(ret);
 					}
 				});
 
 
 		//now we need to feed these features into a window of increasing size. On that window,apply the predict function
-		DataStream<Tuple2<Integer, Integer>> stream2 = features
-				.process(new ProcessFunction<Tuple3<Long,Double,Double>, Tuple2<Integer, Integer>>() {
+		DataStream<Tuple2<Long, Integer>> stream2 = features
+				.process(new ProcessFunction<Tuple3<Long,Double,Double>, Tuple2<Long, Integer>>() {
 					@Override
-					public void processElement(Tuple3<Long, Double, Double> x_n, Context context, Collector<Tuple2<Integer, Integer>> out) throws Exception {
+					public void processElement(Tuple3<Long, Double, Double> x_n, Context context, Collector<Tuple2<Long, Integer>> out) throws Exception {
 						w2_builder.add(new Tuple2<>(x_n.f1, x_n.f2));
 						Tuple2<Long, Integer> ret = eventDetector.predict(x_n.f0, w2_builder.toArray(new Tuple2[w2_builder.size()]));
-						out.collect(new Tuple2<>(Integer.getInteger(Long.toString(ret.f0)), ret.f1));
+						System.out.println(ret);
+						out.collect(ret);
 					}
 				});
 

@@ -108,6 +108,5 @@ public class DBSCAN implements Serializable{
         }
 
         DBSCAN cluster = new DBSCAN(1, 2);
-        System.out.println(Arrays.toString(cluster.performDBSCAN(points)));
     }
 }
