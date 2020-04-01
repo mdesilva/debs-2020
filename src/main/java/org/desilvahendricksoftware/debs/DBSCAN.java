@@ -2,17 +2,17 @@ package org.desilvahendricksoftware.debs;
 
 import org.apache.flink.api.java.tuple.Tuple2;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Random;
 
-public class DBSCAN {
+public class DBSCAN implements Serializable{
 
     private double epsilon;
     private int minPoints;
     private HashSet<Tuple2<Double, Double>> visitedPoints = new HashSet<>();
-
 
     public DBSCAN(double epsilon, int minPoints){
         this.epsilon = epsilon;
@@ -107,7 +107,7 @@ public class DBSCAN {
             i++;
         }
 
-        DBSCAN clusterer = new DBSCAN(1, 2);
-        System.out.println(Arrays.toString(clusterer.performDBSCAN(points)));
+        DBSCAN cluster = new DBSCAN(1, 2);
+        System.out.println(Arrays.toString(cluster.performDBSCAN(points)));
     }
 }
