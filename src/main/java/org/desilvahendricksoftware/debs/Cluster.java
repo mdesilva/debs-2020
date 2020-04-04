@@ -24,7 +24,7 @@ public class Cluster {
     }
 
     public float compute_temporal_locality() {
-        return this.memberIndices.length / (this.v - this.u + 1);
+        return (float) this.memberIndices.length / (float) (this.v - this.u + 1);
     }
 
     public String toString(){
