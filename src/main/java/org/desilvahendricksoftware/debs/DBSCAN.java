@@ -13,6 +13,10 @@ public class DBSCAN implements Serializable{
     private double epsilon;
     private int minPoints;
     private HashSet<Tuple2<Double, Double>> visitedPoints = new HashSet<>();
+    public int[] clusters;
+    public int[] labels;
+    public boolean hasNoiseCluster;
+    public int numberOfClustersWithoutNoiseCluster;
 
     public DBSCAN(double epsilon, int minPoints){
         this.epsilon = epsilon;
@@ -77,8 +81,8 @@ public class DBSCAN implements Serializable{
         return Math.sqrt(pow1 + pow2);
     }
 
-    public int[] performDBSCAN(Tuple2<Double, Double>[] points){
-        int ret[] = new int[points.length];
+    public void fit(Tuple2<Double, Double>[] points){
+        int clusters[] = new int[points.length];
 
         ArrayList result = performDBSCANHelper(points);
         for(int k = 0; k < points.length; k++){
@@ -86,27 +90,20 @@ public class DBSCAN implements Serializable{
             for(int j = 0; j< result.size(); j++){
                 ArrayList temp = (ArrayList) result.get(j);
                 if(temp.contains(points[k])){
-                    ret[k] = j;
+                    clusters[k] = j;
                     flag = true;
                     break;
                 }
             }
             if(!flag){
-                ret[k] = -1;
+                clusters[k] = -1;
             }
         }
-        return ret;
+        this.clusters = clusters;
+        this.labels = ArrayUtils.unique(this.clusters);
+        this.hasNoiseCluster = ArrayUtils.contains(this.labels, -1) ?  true : false;
+        this.numberOfClustersWithoutNoiseCluster = ArrayUtils.contains(this.labels, -1) ? this.labels.length - 1 : this.labels.length;
     }
 
-    public static void main(String[] args){
-        Random random = new Random(4522);
-        Tuple2[] points = new Tuple2[1000];
-        int i = 0;
-        while(i<1000){
-            points[i] = new Tuple2((double)random.nextInt(1000), (double)random.nextInt(1000));
-            i++;
-        }
 
-        DBSCAN cluster = new DBSCAN(1, 2);
-    }
 }
