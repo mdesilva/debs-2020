@@ -66,4 +66,13 @@ public class ArrayUtils {
         }
         return max;
     }
+
+    public static boolean contains(int[] array, int needle) {
+        for(int value: array) {
+            if (value == needle) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
