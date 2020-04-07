@@ -1,5 +1,7 @@
 package org.desilvahendricksoftware.debs;
 
+import java.util.Arrays;
+
 public class Cluster {
 
     public int label;
@@ -28,6 +30,6 @@ public class Cluster {
     }
 
     public String toString(){
-        return ("Member indices: " + this.memberIndices + "u: " + this.u + "v: " + this.v + "loc: " + this.loc);
+        return ("Cluster " + this.label + " :\n" + "Member indices: " + Arrays.toString(this.memberIndices) + "\nu: " + this.u + "\nv: " + this.v + "\nloc: " + this.loc + "\n");
     }
 }
