@@ -95,7 +95,6 @@ public class EventDetector implements Serializable {
                     c2 = cluster_i;
                 }
                 //The last event of c1 must be less than the first event of c2
-                //TODO: BUG: LAST EVENT OF C1 NEVER LESS THAN FIRST EVENT OF C2
                 //System.out.println("c1.v: " + c1.v + " c2.u: " + c2.u);
                 if (c1.v < c2.u) {
                     System.out.println("hit");
