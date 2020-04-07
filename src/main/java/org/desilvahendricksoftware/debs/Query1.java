@@ -18,9 +18,7 @@
 
 package org.desilvahendricksoftware.debs;
 
-import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.api.common.io.FileInputFormat;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.streaming.api.TimeCharacteristic;
@@ -30,15 +28,10 @@ import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.streaming.api.functions.timestamps.AscendingTimestampExtractor;
 import org.apache.flink.streaming.api.functions.windowing.ProcessAllWindowFunction;
 import org.apache.flink.streaming.api.windowing.assigners.SlidingEventTimeWindows;
-import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.util.Collector;
-import scala.App;
 
-import java.awt.*;
-import java.io.*;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 public class Query1 {
@@ -58,12 +51,12 @@ public class Query1 {
 		ArrayList<Tuple2<Double, Double>> w2_builder = new ArrayList<>(); //TODO: Determine how to correctly store a list of features.
 		final int currentWindowId = 0;
 
-		/* Using hyperparameters from Python solution for now */
+		/* Using hyper parameters from Python solution for now */
 		EventDetector eventDetector = new EventDetector(0.03, 2, 0.8, 40);
 
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 		env.setParallelism(1);
-		DataStream<String> input = env.readTextFile(AppBase.pathToData);
+		DataStream<String> input = env.readTextFile(AppBase.pathToDatasetForQuery1);
 
 		DataStream<Tuple3<Long, Double, Double>> stream = input.map(new MapFunction<String, Tuple3<Long, Double, Double>>() {
 			@Override
@@ -111,9 +104,19 @@ public class Query1 {
 				.process(new ProcessFunction<Tuple3<Long,Double,Double>, Tuple2<Long, Integer>>() {
 					@Override
 					public void processElement(Tuple3<Long, Double, Double> x_n, Context context, Collector<Tuple2<Long, Integer>> out) throws Exception {
+						eventDetector.numWindowsProcessedSinceLastEventDetectedCheck++;
+						//If an event is not detected and w2 has more than 100 elements, remove the earliest pair of features
+						if (eventDetector.numWindowsProcessedSinceLastEventDetectedCheck > 100 && !eventDetector.eventDetected) {
+							System.out.println("Removing earliest pair of features");
+							w2_builder.remove(0);
+							eventDetector.numWindowsProcessedSinceLastEventDetectedCheck = 0;
+						}
 						w2_builder.add(new Tuple2<>(x_n.f1, x_n.f2));
 						Tuple2<Long, Integer> ret = eventDetector.predict(x_n.f0, w2_builder.toArray(new Tuple2[w2_builder.size()]));
-						System.out.println(ret);
+						if (ret.f1 == 1) {
+							eventDetector.eventDetected = true;
+							System.out.println(ret);
+						}
 						out.collect(ret);
 					}
 				});
