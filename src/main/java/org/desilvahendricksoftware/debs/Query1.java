@@ -48,7 +48,7 @@ public class Query1 {
 		 */
 		final int windowSize = 1000;
 
-		ArrayList<Tuple2<Double, Double>> w2_builder = new ArrayList<>(); //TODO: Determine how to correctly store a list of features.
+		ArrayList<Point> w2_builder = new ArrayList<>(); //TODO: Determine how to correctly store a list of features.
 		final int currentWindowId = 0;
 
 		/* Using hyper parameters from Python solution for now */
@@ -111,8 +111,8 @@ public class Query1 {
 							w2_builder.remove(0);
 							eventDetector.numWindowsProcessedSinceLastEventDetectedCheck = 0;
 						}
-						w2_builder.add(new Tuple2<>(x_n.f1, x_n.f2));
-						Tuple2<Long, Integer> ret = eventDetector.predict(x_n.f0, w2_builder.toArray(new Tuple2[w2_builder.size()]));
+						w2_builder.add(new Point(x_n.f1, x_n.f2));
+						Tuple2<Long, Integer> ret = eventDetector.predict(x_n.f0, w2_builder.toArray(new Point[w2_builder.size()]));
 						if (ret.f1 == 1) {
 							eventDetector.eventDetected = true;
 							System.out.println(ret);

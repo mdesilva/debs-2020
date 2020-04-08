@@ -111,13 +111,4 @@ public class DBSCAN implements Serializable{
         this.numberOfClustersWithoutNoiseCluster = ArrayUtils.contains(this.labels, -1) ? this.labels.length - 1 : this.labels.length;
     }
 
-    public static final class Point extends Tuple2<Double, Double> {
-
-        public Point(double x, double y) {
-            this.f0 = x;
-            this.f1 = y;
-        }
-    }
-
-
 }
