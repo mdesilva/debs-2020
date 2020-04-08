@@ -105,10 +105,10 @@ public class Query1 {
 					@Override
 					public void processElement(Tuple3<Long, Double, Double> x_n, Context context, Collector<Tuple2<Long, Integer>> out) throws Exception {
 						eventDetector.numWindowsProcessedSinceLastEventDetectedCheck++;
-						//If an event is not detected and w2 has more than 100 elements, remove the earliest pair of features
+						//If an event is not detected and w2 has more than 100 elements, empty the window
 						if (eventDetector.numWindowsProcessedSinceLastEventDetectedCheck > 100 && !eventDetector.eventDetected) {
-							System.out.println("Removing earliest pair of features");
-							w2_builder.remove(0);
+							System.out.println("Emptying the window");
+							w2_builder.clear();
 							eventDetector.numWindowsProcessedSinceLastEventDetectedCheck = 0;
 						}
 						w2_builder.add(new Point(x_n.f1, x_n.f2));
