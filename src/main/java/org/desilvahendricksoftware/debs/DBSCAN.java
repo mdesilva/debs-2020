@@ -3,16 +3,13 @@ package org.desilvahendricksoftware.debs;
 import org.apache.flink.api.java.tuple.Tuple2;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Random;
+import java.util.*;
 
 public class DBSCAN implements Serializable{
 
     private double epsilon;
     private int minPoints;
-    private HashSet<Tuple2<Double, Double>> visitedPoints = new HashSet<>();
+    private HashSet<Point> visitedPoints = new HashSet<>();
     public int[] clusters;
     public int[] labels;
     public boolean hasNoiseCluster;
@@ -23,25 +20,33 @@ public class DBSCAN implements Serializable{
         this.minPoints = minPoints;
     }
 
+    public double getEpsilon() {
+        return this.epsilon;
+    }
 
-    private ArrayList performDBSCANHelper(Tuple2<Double,Double>[] points){
+    public int getMinPoints() {
+        return this.minPoints;
+    }
+
+    //TODO: test
+    public ArrayList<ArrayList<Point>> performDBSCANHelper(Point[] points){
         int index = 0;
-        ArrayList res = new ArrayList();
+        ArrayList<ArrayList<Point>> res = new ArrayList<>();
         visitedPoints.clear();
         while (index < points.length){
-            Tuple2 current = points[index];
+            Point current = points[index];
             if(!visitedPoints.contains(current)){
                 visitedPoints.add(current);
-                ArrayList<Tuple2> neighbors = getNeighbors(current,points);
+                ArrayList<Point> neighbors = getNeighbors(current,points);
                 if(neighbors.size() >= this.minPoints){
                     int ind = 0;
                     while(ind < neighbors.size()){
-                        Tuple2 curr = neighbors.get(ind);
+                        Point curr = neighbors.get(ind);
                         if(!visitedPoints.contains(curr)){
                             visitedPoints.add(curr);
-                            ArrayList indivNeighbors = getNeighbors(curr,points);
+                            ArrayList<Point> indivNeighbors = getNeighbors(curr,points);
                             if(indivNeighbors.size() >= this.minPoints){
-                                neighbors = mergeRightToLeftCollection(neighbors,indivNeighbors);
+                                neighbors = mergeRightToLeftCollection(neighbors, indivNeighbors);
                             }
                         }
                         ind++;
@@ -54,20 +59,21 @@ public class DBSCAN implements Serializable{
         return res;
     }
 
-    private ArrayList<Tuple2> getNeighbors(Tuple2 input, Tuple2<Double,Double>[] points ){
-        ArrayList ret = new ArrayList();
+    public ArrayList<Point> getNeighbors(Point input, Point[] points ){
+        ArrayList<Point> ret = new ArrayList<Point>();
         for(int i = 0; i < points.length; i++){
-            Tuple2 candidate = points[i];
-            if(calculateDistance(candidate,input)<=this.epsilon){
+            Point candidate = points[i];
+            if(input != candidate && calculateDistance(candidate,input) <= this.epsilon){
                 ret.add(candidate);
             }
         }
         return ret;
     }
 
-    private ArrayList<Tuple2> mergeRightToLeftCollection(ArrayList<Tuple2> neighbors1,ArrayList<Tuple2> neighbors2){
+    //TODO: test
+    public ArrayList<Point> mergeRightToLeftCollection(ArrayList<Point> neighbors1, ArrayList<Point> neighbors2){
         for (int i = 0; i < neighbors2.size(); i++) {
-            Tuple2 tempPt = neighbors2.get(i);
+            Point tempPt = neighbors2.get(i);
             if (!neighbors1.contains(tempPt)) {
                 neighbors1.add(tempPt);
             }
@@ -75,20 +81,20 @@ public class DBSCAN implements Serializable{
         return neighbors1;
     }
 
-    private static double calculateDistance(Tuple2<Double,Double> pointOne, Tuple2<Double,Double> pointTwo){
+    public static double calculateDistance(Point pointOne, Point pointTwo){
         double pow1 = Math.pow(pointTwo.f0-pointOne.f0, 2.0);
         double pow2 = Math.pow(pointTwo.f1-pointOne.f1,2.0);
         return Math.sqrt(pow1 + pow2);
     }
 
-    public void fit(Tuple2<Double, Double>[] points){
+    public void fit(Point[] points){
         int clusters[] = new int[points.length];
 
-        ArrayList result = performDBSCANHelper(points);
+        ArrayList<ArrayList<Point>> result = performDBSCANHelper(points);
         for(int k = 0; k < points.length; k++){
             boolean flag = false;
             for(int j = 0; j< result.size(); j++){
-                ArrayList temp = (ArrayList) result.get(j);
+                ArrayList<Point> temp = result.get(j);
                 if(temp.contains(points[k])){
                     clusters[k] = j;
                     flag = true;
@@ -103,6 +109,14 @@ public class DBSCAN implements Serializable{
         this.labels = ArrayUtils.unique(this.clusters);
         this.hasNoiseCluster = ArrayUtils.contains(this.labels, -1) ?  true : false;
         this.numberOfClustersWithoutNoiseCluster = ArrayUtils.contains(this.labels, -1) ? this.labels.length - 1 : this.labels.length;
+    }
+
+    public static final class Point extends Tuple2<Double, Double> {
+
+        public Point(double x, double y) {
+            this.f0 = x;
+            this.f1 = y;
+        }
     }
 
 
