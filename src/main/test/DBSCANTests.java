@@ -89,16 +89,16 @@ public class DBSCANTests {
 
     @Test
     public void DBSCANShouldReturn4Clusters() {
-        DBSCAN dbscan = new DBSCAN(0.3, 10);
+        DBSCAN dbscan = new DBSCAN(0.165, 2);
         dbscan.fit(readSamplesFromCsv("dataset/4TrueClusters.csv"));
-        assertEquals("With an epsilon of 0.3 and minimum # of points of 10, DBSCAN should return 4 clusters for a dataset containing 4 true clusters.",
+        assertEquals("With an epsilon of 0.165 and minimum # of points of 2, DBSCAN should return 4 clusters for a dataset containing 4 true clusters.",
                 4,
                 dbscan.numberOfClustersWithoutNoiseCluster);
     }
 
     @Test
     public void DBSCANShouldReturn5Clusters() {
-        DBSCAN dbscan = new DBSCAN(0.20, 20);
+        DBSCAN dbscan = new DBSCAN(0.15, 2);
         dbscan.fit(readSamplesFromCsv("dataset/5TrueClusters.csv"));
         assertEquals("With an epsilon of 0.20 and a minimum # of points of 20, DBSCAN should return 5 clusters for a dataset containing 5 true clusters.",
                 5,
