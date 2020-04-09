@@ -1,7 +1,5 @@
 package org.desilvahendricksoftware.debs;
 
-import org.apache.flink.api.java.tuple.Tuple2;
-
 import java.io.Serializable;
 import java.util.*;
 
@@ -70,7 +68,6 @@ public class DBSCAN implements Serializable{
         return ret;
     }
 
-    //TODO: test
     public ArrayList<Point> mergeRightToLeftCollection(ArrayList<Point> neighbors1, ArrayList<Point> neighbors2){
         for (int i = 0; i < neighbors2.size(); i++) {
             Point tempPt = neighbors2.get(i);
