@@ -40,16 +40,9 @@ public class Query1 {
 	public static void main(String[] args) throws Exception {
 		// set up the streaming execution environment
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-
-		/*
-		 * Have a look at the programming guide for the Java API:
-		 * https://flink.apache.org/docs/latest/apis/streaming/index.html
-		 *
-		 */
 		final int windowSize = 1000;
 
 		ArrayList<Point> w2_builder = new ArrayList<>(); //TODO: Determine how to correctly store a list of features.
-		final int currentWindowId = 0;
 
 		/* Using hyper parameters from Python solution for now */
 		EventDetector eventDetector = new EventDetector(0.03, 2, 0.8, 40);
@@ -58,6 +51,7 @@ public class Query1 {
 		env.setParallelism(1);
 		DataStream<String> input = env.readTextFile(AppBase.pathToDatasetForQuery1);
 
+		//process each record from the json output here
 		DataStream<Tuple3<Long, Double, Double>> stream = input.map(new MapFunction<String, Tuple3<Long, Double, Double>>() {
 			@Override
 			//f0: id, f1; voltage, f2: current
