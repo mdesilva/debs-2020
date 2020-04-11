@@ -1,7 +1,12 @@
 package org.desilvahendricksoftware.debs;
 import com.cedarsoftware.util.io.JsonReader;
+import com.cedarsoftware.util.io.JsonWriter;
+import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
@@ -11,11 +16,27 @@ import java.util.*;
 
 public class Requests {
 
-    static final int RECORD_START_INDEX = 13;
-    static final String HOST = "http://localhost/";
+    final String BENCHMARK_SYSTEM_URL = "BENCHMARK_SYSTEM_URL";
+    final int RECORD_START_INDEX = 13;
+    final int QUERY_1 = 1;
+    final int QUERY_2 = 2;
 
+    Map JSON_WRITER_ARGS = new HashMap();
+    String endpoint;
+    String host;
 
-    public static Sample[] serializeRecordsToSamples(String records) {
+    public Requests(int query) throws InvalidQueryException {
+        if (query == QUERY_1 /*|| query == QUERY_2 */) {
+            this.endpoint = "/data/" + query;
+        } else {
+            throw new InvalidQueryException();
+        }
+        this.host = System.getenv(BENCHMARK_SYSTEM_URL) != null ?  System.getenv(BENCHMARK_SYSTEM_URL) : "http://localhost";
+        JSON_WRITER_ARGS.put(JsonWriter.TYPE, false);
+
+    }
+
+    public Sample[] serializeRecordsToSamples(String records) {
         records = records.substring(RECORD_START_INDEX, records.length() - 1);
         ArrayList<Sample> samples = new ArrayList<Sample>();
         StringBuilder currentSampleBuilder = new StringBuilder();
@@ -42,9 +63,9 @@ public class Requests {
         return samples.toArray(new Sample[samples.size()]);
     }
 
-    public static Sample[] get(String endpoint) {
+    public Sample[] get() {
         CloseableHttpClient httpclient = HttpClients.createDefault();
-        HttpGet getRequest = new HttpGet(HOST + endpoint);
+        HttpGet getRequest = new HttpGet(this.host + this.endpoint);
         CloseableHttpResponse response = null;
         try {
             response = httpclient.execute(getRequest);
@@ -58,4 +79,24 @@ public class Requests {
             return null;
         }
     }
+
+    public void post(Result result) {
+        CloseableHttpClient httpClient = HttpClients.createDefault();
+        HttpPost postRequest = new HttpPost(this.host + this.endpoint);
+        postRequest.setEntity(new StringEntity(JsonWriter.objectToJson(result, JSON_WRITER_ARGS), ContentType.APPLICATION_JSON));
+        try {
+            HttpResponse response = httpClient.execute(postRequest);
+            System.out.println(response.getStatusLine());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public class InvalidQueryException extends Exception {
+        public InvalidQueryException() {
+            super("Invalid query provided. Valid queries include Query 1. Query 2 is not ready yet");
+        }
+    }
+
+    public static void main(String[] args){};
 }

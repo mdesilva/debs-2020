@@ -25,6 +25,7 @@ import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.ProcessFunction;
+import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.streaming.api.functions.timestamps.AscendingTimestampExtractor;
 import org.apache.flink.streaming.api.functions.windowing.ProcessAllWindowFunction;
 import org.apache.flink.streaming.api.windowing.assigners.SlidingEventTimeWindows;
@@ -37,29 +38,40 @@ import java.util.ArrayList;
 public class Query1 {
 
 
-	public static void main(String[] args) throws Exception {
-		// set up the streaming execution environment
+	public static void main(String[] args) throws Exception, Requests.InvalidQueryException {
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		final int windowSize = 1000;
 
+		Requests requests = new Requests(1);
 		ArrayList<Point> w2_builder = new ArrayList<>(); //TODO: Determine how to correctly store a list of features.
-
-		/* Using hyper parameters from Python solution for now */
-		EventDetector eventDetector = new EventDetector(0.03, 2, 0.8, 40);
+		EventDetector eventDetector = new EventDetector(0.03, 2, 0.8, 40); /* Using hyper parameters from Python solution for now */
 
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 		env.setParallelism(1);
-		DataStream<String> input = env.readTextFile(AppBase.pathToDatasetForQuery1);
 
-		//process each record from the json output here
-		DataStream<Tuple3<Long, Double, Double>> stream = input.map(new MapFunction<String, Tuple3<Long, Double, Double>>() {
+		DataStream<Sample> input =  env.addSource(new SourceFunction<Sample>() {
+			@Override
+			public void run(SourceContext<Sample> sourceContext) throws Exception {
+				Sample[] batch;
+				while ((batch = requests.get()) != null) {
+					for (Sample sample: batch) {
+						//System.out.println(sample.toString());
+						sourceContext.collect(sample);
+					}
+				}
+			}
+			@Override
+			public void cancel() {}
+		});
+
+		//process each record from the json output here and assign watermarks to each record.
+		DataStream<Tuple3<Long, Double, Double>> samples = input.map(new MapFunction<Sample, Tuple3<Long, Double, Double>>() {
 			@Override
 			//f0: id, f1; voltage, f2: current
-			public Tuple3<Long, Double, Double> map(String s) throws Exception {
-				String[] currentLine = s.split(",");
-				Long id = Long.parseLong(currentLine[0]);
-				Double voltage = Double.parseDouble(currentLine[1]);
-				Double current = Double.parseDouble(currentLine[2]);
+			public Tuple3<Long, Double, Double> map(Sample sample) throws Exception {
+				Long id = sample.i;
+				Double voltage = sample.voltage;
+				Double current = sample.current;
 				Tuple3<Long, Double, Double> ret = new Tuple3<>(id,voltage,current);
 				return ret;
 			}
@@ -71,7 +83,7 @@ public class Query1 {
 				}
 			});
 
-		DataStream<Tuple3<Long, Double, Double>> features = stream
+		DataStream<Tuple3<Long, Double, Double>> features = samples
 				.windowAll(SlidingEventTimeWindows.of(Time.milliseconds(windowSize), Time.milliseconds(windowSize)))
 				.process(new ProcessAllWindowFunction<Tuple3<Long, Double, Double>, Tuple3<Long, Double, Double>, TimeWindow>() {
 					@Override
@@ -94,28 +106,28 @@ public class Query1 {
 
 
 		//now we need to feed these features into a window of increasing size. On that window,apply the predict function
-		DataStream<Tuple2<Long, Integer>> stream2 = features
-				.process(new ProcessFunction<Tuple3<Long,Double,Double>, Tuple2<Long, Integer>>() {
+		DataStream<Tuple2<Long, Boolean>> events = features
+				.process(new ProcessFunction<Tuple3<Long,Double,Double>, Tuple2<Long, Boolean>>() {
 					@Override
-					public void processElement(Tuple3<Long, Double, Double> x_n, Context context, Collector<Tuple2<Long, Integer>> out) throws Exception {
-						eventDetector.numWindowsProcessedSinceLastEventDetectedCheck++;
+					public void processElement(Tuple3<Long, Double, Double> x_n, Context context, Collector<Tuple2<Long, Boolean>> out) throws Exception {
+						eventDetector.numWindowsProcessedSinceLastEventDetected++;
 						//If an event is not detected and w2 has more than 100 elements, empty the window
-						if (eventDetector.numWindowsProcessedSinceLastEventDetectedCheck > 100 && !eventDetector.eventDetected) {
-							System.out.println("Emptying the window");
+						if (eventDetector.numWindowsProcessedSinceLastEventDetected > 100 && !eventDetector.eventDetected) {
+							//System.out.println("Emptying the window");
 							w2_builder.clear();
-							eventDetector.numWindowsProcessedSinceLastEventDetectedCheck = 0;
+							eventDetector.numWindowsProcessedSinceLastEventDetected = 0;
 						}
 						w2_builder.add(new Point(x_n.f1, x_n.f2));
-						Tuple2<Long, Integer> ret = eventDetector.predict(x_n.f0, w2_builder.toArray(new Point[w2_builder.size()]));
-						if (ret.f1 == 1) {
+						Tuple2<Long, Boolean> ret = eventDetector.predict(x_n.f0, w2_builder.toArray(new Point[w2_builder.size()]));
+						if (ret.f1 == true) {
 							eventDetector.eventDetected = true;
-							System.out.println(ret);
 						}
+						requests.post(new Result(ret.f0, ret.f1, 0));
 						out.collect(ret);
 					}
 				});
 
 		// execute program
-		env.execute("Flink Streaming Java API Skeleton");
+		env.execute("DEBS 2020: Query 1");
 	}
 }

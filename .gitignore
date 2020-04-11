@@ -2,3 +2,4 @@
 AppBase.java
 target/*
 .DS_Store/*
+*.iml

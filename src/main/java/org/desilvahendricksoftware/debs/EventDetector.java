@@ -15,7 +15,7 @@ public class EventDetector implements Serializable {
     double temporalLocalityEpsilon;
     double lossThresholdLambda;
     boolean eventDetected = false;
-    int numWindowsProcessedSinceLastEventDetectedCheck = 0; //if we hit 100 windows and we still haven't detected an event, remove the earliest pair of features from X
+    int numWindowsProcessedSinceLastEventDetected = 0; //if we hit 100 windows and we still haven't detected an event, remove the earliest pair of features from X
 
     public EventDetector(double dbscan_epsilon, int dbscan_minPoints, double temporalLocalityEpsilon, double lossThresholdLambda) {
         this.temporalLocalityEpsilon = temporalLocalityEpsilon;
@@ -42,7 +42,7 @@ public class EventDetector implements Serializable {
             numTotalClustersWithoutNoiseCluster = numTotalClusters;
         }
 
-        System.out.println("Total number of clusters without noise: " + numTotalClustersWithoutNoiseCluster);
+        //System.out.println("Total number of clusters without noise: " + numTotalClustersWithoutNoiseCluster);
 
         if (numTotalClustersWithoutNoiseCluster < 2) {
             return null;
@@ -51,13 +51,13 @@ public class EventDetector implements Serializable {
         //Check 2: Verify that we have at least two clusters with locality > 1 - temporal locality epsilon, not including the noise cluster
         for (Cluster cluster : clusters) {
             if (cluster.label != -1) {
-                System.out.println(cluster.toString());
+                //System.out.println(cluster.toString());
                 if (cluster.loc >= 1 - this.temporalLocalityEpsilon) {
                     System.out.println("add");
                     checkTwoClustersBuilder.add(cluster);
                 }
             } else {
-                System.out.println("Noise cluster: " + cluster.toString());
+                //System.out.println("Noise cluster: " + cluster.toString());
             }
 
         }
@@ -67,7 +67,7 @@ public class EventDetector implements Serializable {
 
 
         Cluster[] checkTwoClusters = checkTwoClustersBuilder.toArray(new Cluster[checkTwoClustersBuilder.size()]);
-        System.out.println("Number of clusters that pass Check 2: " + checkTwoClusters.length);
+        //System.out.println("Number of clusters that pass Check 2: " + checkTwoClusters.length);
         /*
         Check 3:
         We must find all pairs of clusters that do not interleave in the time domain.
@@ -81,8 +81,8 @@ public class EventDetector implements Serializable {
             for (int j = 1; j < checkTwoClusters.length; j++) {
                 Cluster cluster_i = checkTwoClusters[i];
                 Cluster cluster_j = checkTwoClusters[j];
-                System.out.println(cluster_i.toString());
-                System.out.println(cluster_j.toString());
+                //System.out.println(cluster_i.toString());
+                //System.out.println(cluster_j.toString());
 
                 Cluster c1;
                 Cluster c2;
@@ -105,7 +105,7 @@ public class EventDetector implements Serializable {
                         Find the events in the noise cluster that are in between the last event of c1 and the first event of c2
                          */
                         int[] c0_indices = noiseCluster.memberIndices;
-                        System.out.println("c0_indices: " + Arrays.toString(c0_indices));
+                        //System.out.println("c0_indices: " + Arrays.toString(c0_indices));
                         boolean[] condition = new boolean[noiseCluster.memberIndices.length];
                         int numValidEvents = 0;
                         for (int k = 0; k < noiseCluster.memberIndices.length; k++) {
@@ -116,7 +116,7 @@ public class EventDetector implements Serializable {
                                 condition[k] = false;
                             }
                         }
-                        System.out.println("Condition: " + Arrays.toString(condition));
+                        //System.out.println("Condition: " + Arrays.toString(condition));
                         int[] event_interval_t = new int[numValidEvents];
                         int event_interval_t_index = 0;
                         for (int l = 0; l < condition.length; l++) {
@@ -136,7 +136,7 @@ public class EventDetector implements Serializable {
         if (non_interleaving_cluster_pairs.size() < 1) {
             return null;
         } else {
-            System.out.println("Passed check 3");
+            //System.out.println("Passed check 3");
             return non_interleaving_cluster_pairs.toArray(new NonInterleavingClusterPair[non_interleaving_cluster_pairs.size()]);
         }
 
@@ -148,7 +148,7 @@ public class EventDetector implements Serializable {
      */
     public NonInterleavingClusterPair compute_and_evaluate_loss(NonInterleavingClusterPair[] checked_clusters) {
         for (int i = 0; i < checked_clusters.length; i++) {
-            System.out.println(Arrays.toString(checked_clusters[i].event_interval_t));
+            //System.out.println(Arrays.toString(checked_clusters[i].event_interval_t));
             int lower_event_bound_u = checked_clusters[i].event_interval_t[0] - 1;
             int upper_event_bound_v = checked_clusters[i].event_interval_t[checked_clusters[i].event_interval_t.length - 1] + 1;
             int[] c1_indices = checked_clusters[i].c1.memberIndices;
@@ -222,23 +222,20 @@ public class EventDetector implements Serializable {
         this.clusters = clusters;
     }
 
-    public Tuple2<Long, Integer> predict(long windowId, Point[] X) {
+    public Tuple2<Long, Boolean> predict(long windowId, Point[] X) {
         //Forward pass
 
         this.update_clustering_structure(X); //step 2
-        for (int i = 0; i < this.clusters.length; i++) {
-            this.clusters[i].toString();
-        }
 
         NonInterleavingClusterPair[] valid_cluster_pairs = this.check_event_model_constraints(); //step 2a
         if (valid_cluster_pairs == null || valid_cluster_pairs.length == 0) {
             //System.out.println("No valid clusters found");
-            return new Tuple2(windowId, 0); //We need at least one cluster pair to continue (e.g no event was detected). Return and take the next sample
+            return new Tuple2(windowId, false); //We need at least one cluster pair to continue (e.g no event was detected). Return and take the next sample
         }
         //Event detected, so now return the cluster pair with the least model loss
         NonInterleavingClusterPair forward_pass_event_cluster_pair_with_least_loss = this.compute_and_evaluate_loss(valid_cluster_pairs); //step 3
         if (forward_pass_event_cluster_pair_with_least_loss == null) {
-            return new Tuple2(windowId, 0); //No cluster pair was found with model loss < loss threshold. Return and take the next sample
+            return new Tuple2(windowId, false); //No cluster pair was found with model loss < loss threshold. Return and take the next sample
         } else {
             //Begin backwards pass if we found a non interleaving cluster pair with loss < loss threshold
             this.forward_pass_clusters = this.clusters;
@@ -270,8 +267,8 @@ public class EventDetector implements Serializable {
                     }
                 }
             }
-            System.out.println("Event detected at " + Arrays.toString(last_known_valid_event_cluster_pair_with_least_loss.event_interval_t));
-            return new Tuple2(windowId, 1);
+            //System.out.println("Event detected at " + Arrays.toString(last_known_valid_event_cluster_pair_with_least_loss.event_interval_t));
+            return new Tuple2(windowId, true);
         }
     }
 }
