@@ -12,9 +12,10 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.*;
 
-public class Requests {
+public class Requests implements Serializable{
 
     final String BENCHMARK_SYSTEM_URL = "BENCHMARK_SYSTEM_URL";
     final int RECORD_START_INDEX = 13;
