@@ -64,6 +64,7 @@ under the License.
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-streaming-java_${scala.binary.version}</artifactId>
 			<version>${flink.version}</version>
+			<scope>compile</scope>
 		</dependency>
 
 		<dependency>
@@ -82,7 +83,7 @@ under the License.
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-streaming-java_2.11</artifactId>
 			<version>${flink.version}</version>
-			<scope>test</scope>
+			<scope>compile</scope>
 			<type>test-jar</type>
 		</dependency>
 
@@ -91,14 +92,14 @@ under the License.
 			<artifactId>mockito-all</artifactId>
 			<version>1.10.19</version>
 			<type>jar</type>
-			<scope>test</scope>
+			<scope>compile</scope>
 		</dependency>
 
 		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-runtime_2.11</artifactId>
 			<version>${flink.version}</version>
-			<scope>test</scope>
+			<scope>compile</scope>
 			<type>test-jar</type>
 		</dependency>
 
