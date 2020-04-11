@@ -28,7 +28,7 @@ public class Requests implements Serializable{
 
     public Requests(int query) throws InvalidQueryException {
         if (query == QUERY_1 /*|| query == QUERY_2 */) {
-            this.endpoint = "/data/" + query;
+            this.endpoint = "/data/" + query + "/";
         } else {
             throw new InvalidQueryException();
         }
@@ -81,13 +81,15 @@ public class Requests implements Serializable{
         }
     }
 
-    public void post(Result result) {
+    public void post(Result result) throws PostRequestFailure {
         CloseableHttpClient httpClient = HttpClients.createDefault();
         HttpPost postRequest = new HttpPost(this.host + this.endpoint);
         postRequest.setEntity(new StringEntity(JsonWriter.objectToJson(result, JSON_WRITER_ARGS), ContentType.APPLICATION_JSON));
         try {
             HttpResponse response = httpClient.execute(postRequest);
-            System.out.println(response.getStatusLine());
+            if (response.getStatusLine().getStatusCode() != 200) {
+                throw new PostRequestFailure(response.getStatusLine().getStatusCode());
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -96,6 +98,12 @@ public class Requests implements Serializable{
     public class InvalidQueryException extends Exception {
         public InvalidQueryException() {
             super("Invalid query provided. Valid queries include Query 1. Query 2 is not ready yet");
+        }
+    }
+
+    public class PostRequestFailure extends Exception {
+        public PostRequestFailure(int statusCode) {
+            super("Post request returned status code " + statusCode);
         }
     }
 
