@@ -25,7 +25,7 @@ under the License.
 	<version>1.0.0</version>
 	<packaging>jar</packaging>
 
-	<name>Cluster data analysis</name>
+	<name>Debs 2020 Challenge</name>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -138,6 +138,12 @@ under the License.
 			<version>4.12.0</version>
 		</dependency>
 
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>jcl-over-slf4j</artifactId>
+			<version>${slf4j.version}</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>
@@ -235,6 +241,16 @@ under the License.
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
 				<version>2.6</version>
+				<!--
+				<configuration>
+					<archive>
+						<manifest>
+							<addClasspath> true </addClasspath>
+							<mainClass> org.desilvahendricksoftware.debs.Query1 </mainClass>
+						</manifest>
+					</archive>
+				</configuration>
+				!-->
 				<executions>
 				</executions>
 			</plugin>
@@ -361,13 +377,11 @@ under the License.
 							</filters>
 							<!-- If you want to use ./bin/flink run <quickstart jar> uncomment the following lines.
 							This will add a Main-Class entry to the manifest file -->
-							<!--
 							<transformers>
 								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-									<mainClass>org.apache.flink.quickstart.StreamingJob</mainClass>
+									<mainClass>org.desilvahendricksoftware.debs.Query1</mainClass>
 								</transformer>
 							</transformers>
-						    -->
 							<createDependencyReducedPom>false</createDependencyReducedPom>
 						</configuration>
 					</execution>
