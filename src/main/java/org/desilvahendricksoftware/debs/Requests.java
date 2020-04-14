@@ -32,7 +32,8 @@ public class Requests implements Serializable{
         } else {
             throw new InvalidQueryException();
         }
-        this.host = System.getenv(BENCHMARK_SYSTEM_URL) != null ?  System.getenv(BENCHMARK_SYSTEM_URL) : "http://localhost";
+        this.host = System.getenv(BENCHMARK_SYSTEM_URL) != null ? "http://" + System.getenv(BENCHMARK_SYSTEM_URL) : "http://localhost";
+        System.out.println("Using host: " + this.host);
         JSON_WRITER_ARGS.put(JsonWriter.TYPE, false);
 
     }
@@ -65,6 +66,7 @@ public class Requests implements Serializable{
     }
 
     public Sample[] get() {
+        System.out.println("Making batch request");
         CloseableHttpClient httpclient = HttpClients.createDefault();
         HttpGet getRequest = new HttpGet(this.host + this.endpoint);
         CloseableHttpResponse response = null;
@@ -82,6 +84,7 @@ public class Requests implements Serializable{
     }
 
     public void post(Result result) throws PostRequestFailure {
+        System.out.println("Posting result");
         CloseableHttpClient httpClient = HttpClients.createDefault();
         HttpPost postRequest = new HttpPost(this.host + this.endpoint);
         postRequest.setEntity(new StringEntity(JsonWriter.objectToJson(result, JSON_WRITER_ARGS), ContentType.APPLICATION_JSON));

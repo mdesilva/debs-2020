@@ -48,7 +48,6 @@ public class Query1 {
 
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 		env.setParallelism(1);
-
 		DataStream<Sample> input =  env.addSource(new SourceFunction<Sample>() {
 			@Override
 			public void run(SourceContext<Sample> sourceContext) throws Exception {
