@@ -1,32 +1,5 @@
 version: "3"
 services:
-  jobmanager:
-    image: flink
-    expose:
-      - "6123"
-    ports:
-      - "8081:8081"
-    command: jobmanager
-    environment:
-      JOB_MANAGER_RPC_ADDRESS: "jobmanager"
-    networks:
-      - bench
-
-  taskmanager:
-    image: flink
-    expose:
-      - "6121"
-      - "6122"
-    depends_on:
-      - jobmanager
-    command: taskmanager
-    links:
-      ["jobmanager:jobmanager"]
-    environment:
-      JOB_MANAGER_RPC_ADDRESS: "jobmanager"
-    networks:
-      - bench
-
   grader:
     image: palyvos/debs-2020-challenge-grader
     container_name: benchmark-grader
@@ -34,8 +7,6 @@ services:
       HARD_TIMEOUT_SECONDS: 25000
       DATASET_PATH: "/dataset"
       GRADER_CACHE_ENABLED: 'True'
-    depends_on:
-      - jobmanager
     volumes:
       - ./dataset:/dataset
     networks:
@@ -43,17 +14,17 @@ services:
 
   solution:
     container_name: rhetts-solution
+    ports:
+      - "8081:8081"
     build:
       context: .
       dockerfile: Dockerfile
     environment:
       BENCHMARK_SYSTEM_URL: "grader"
-      FLINK_CONF_DIR: "/"
     depends_on:
       - grader
     networks:
       - bench
-
 
 networks:
   bench: {}
