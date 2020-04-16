@@ -1,6 +1,7 @@
 package org.desilvahendricksoftware.debs;
 
 import java.io.Serializable;
+import java.lang.reflect.Array;
 import java.util.*;
 
 public class DBSCAN implements Serializable{
@@ -61,7 +62,7 @@ public class DBSCAN implements Serializable{
         ArrayList<Point> ret = new ArrayList<Point>();
         for(int i = 0; i < points.length; i++){
             Point candidate = points[i];
-            if(input != candidate && calculateDistance(candidate,input) <= this.epsilon){
+            if(calculateDistance(candidate,input) <= this.epsilon){
                 ret.add(candidate);
             }
         }
@@ -86,8 +87,8 @@ public class DBSCAN implements Serializable{
 
     public void fit(Point[] points){
         int clusters[] = new int[points.length];
-
         ArrayList<ArrayList<Point>> result = performDBSCANHelper(points);
+//        System.out.println(Arrays.toString(points));
         for(int k = 0; k < points.length; k++){
             boolean flag = false;
             for(int j = 0; j< result.size(); j++){

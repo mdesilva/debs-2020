@@ -1,6 +1,9 @@
 package org.desilvahendricksoftware.debs;// Inspired by: https://github.com/dmpalyvos/debs-2020-challenge-local/blob/master/solution_app/Test_Utility.py
 
 
+import java.lang.reflect.Array;
+import java.util.Arrays;
+
 public class Utils {
 
     /***
@@ -25,12 +28,21 @@ public class Utils {
      * Room Mean Square = sqrt(1/n(x1^2 + x2^2 + .... + xn^2))
      */
     public static Double rootMeanSquare(Double[] vals) {
-        long squaresSum = 0;
-        for(double i:vals) {
-            squaresSum += Math.pow(i,2);
+        double square = 0.0;
+        double mean;
+        double root;
+        // Calculate square.
+        for(int i = 0; i < 1000; i++)
+        {
+            square += Math.pow(vals[i], 2);
         }
-        long meanSquaresSum = squaresSum / vals.length;
-        return Math.sqrt(meanSquaresSum);
+
+        // Calculate Mean.
+        mean = square / 1000.0;
+
+        // Calculate Root.
+        root = Math.sqrt(mean);
+        return root;
     }
 
     /***

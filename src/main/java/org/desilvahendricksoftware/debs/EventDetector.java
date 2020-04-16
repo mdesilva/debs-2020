@@ -3,6 +3,7 @@ package org.desilvahendricksoftware.debs;
 import org.apache.flink.api.java.tuple.Tuple2;
 
 import java.io.Serializable;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -53,7 +54,6 @@ public class EventDetector implements Serializable {
             if (cluster.label != -1) {
                 //System.out.println(cluster.toString());
                 if (cluster.loc >= 1 - this.temporalLocalityEpsilon) {
-                    System.out.println("add");
                     checkTwoClustersBuilder.add(cluster);
                 }
             } else {
@@ -97,7 +97,6 @@ public class EventDetector implements Serializable {
                 //The last event of c1 must be less than the first event of c2
                 //System.out.println("c1.v: " + c1.v + " c2.u: " + c2.u);
                 if (c1.v < c2.u) {
-                    System.out.println("hit");
                     if (noiseCluster == null) {
                         return null;
                     } else {
@@ -199,7 +198,9 @@ public class EventDetector implements Serializable {
 
     public void update_clustering_structure(Point[] X) {
         this.dbscan.fit(X);
+
         int[] clusters_X = this.dbscan.clusters;
+
         int[] cluster_labels = this.dbscan.labels;
         Cluster[] clusters = new Cluster[cluster_labels.length];
         int index = 0;
