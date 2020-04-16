@@ -159,7 +159,7 @@ public class EventDetector implements Serializable {
 
             //get all c2 samples less than or equal to the lower bound u
             for (int j = 0; j < c2_indices.length; j++) {
-                if (c2_indices[i] <= lower_event_bound_u) {
+                if (c2_indices[j] <= lower_event_bound_u) {
                     numC2SamplesLessThanLowerBound++;
                 }
             }

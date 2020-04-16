@@ -142,6 +142,7 @@ public class Query1 {
 						Tuple2<Long, Boolean> ret = eventDetector.predict(x_n.f0, w2_builder.toArray(new Point[w2_builder.size()]));
 						if (ret.f1 == true) {
 							eventDetector.eventDetected = true;
+							w2_builder.clear();
 						}
 //						requests.post(new Result(ret.f0, ret.f1, 0));
 						System.out.println(ret);
