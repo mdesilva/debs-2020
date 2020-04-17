@@ -19,7 +19,6 @@
 package org.desilvahendricksoftware.debs;
 
 import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -48,13 +47,34 @@ public class Query1 {
 
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 		env.setParallelism(1);
+		// LOCAL
+//		DataStream<String> input = env.readTextFile(AppBase.pathToDatasetForQuery1);
+//
+//		DataStream<Tuple3<Long, Double, Double>> stream = input.map(new MapFunction<String, Tuple3<Long, Double, Double>>() {
+//			@Override
+//			//f0: id, f1; voltage, f2: current
+//			public Tuple3<Long, Double, Double> map(String s) throws Exception {
+//				String[] currentLine = s.split(",");
+//				Long id = Long.parseLong(currentLine[0]);
+//				Double voltage = Double.parseDouble(currentLine[1]);
+//				Double current = Double.parseDouble(currentLine[2]);
+//				Tuple3<Long, Double, Double> ret = new Tuple3<>(id,voltage,current);
+//				return ret;
+//			}
+//		})
+//				.assignTimestampsAndWatermarks(new AscendingTimestampExtractor<Tuple3<Long, Double, Double>>() {
+//					@Override
+//					public long extractAscendingTimestamp(Tuple3<Long, Double, Double> element) {
+//						return element.f0;
+//					}
+//				});
+		//PROD
 		DataStream<Sample> input =  env.addSource(new SourceFunction<Sample>() {
 			@Override
 			public void run(SourceContext<Sample> sourceContext) throws Exception {
 				Sample[] batch;
 				while ((batch = requests.get()) != null) {
 					for (Sample sample: batch) {
-						//System.out.println(sample.toString());
 						sourceContext.collect(sample);
 					}
 				}
@@ -96,19 +116,19 @@ public class Query1 {
 							index++;
 						}
 						//calculate active and reactive power features
-						double activePower = Utils.calculateActivePower(voltages, currents);
-						double reactivePower = Utils.calculateReactivePower(voltages, currents);
-						Tuple3<Long, Double, Double> ret = new Tuple3<>(context.window().getEnd(), activePower, reactivePower);
+						double activePower = Math.log(Utils.calculateActivePower(voltages, currents));
+						double reactivePower = Math.log(Utils.calculateReactivePower(voltages, currents));
+						Tuple3<Long, Double, Double> ret = new Tuple3<>(context.window().getStart() / windowSize, activePower, reactivePower);
 						collector.collect(ret);
 					}
 				});
 
 
 		//now we need to feed these features into a window of increasing size. On that window,apply the predict function
-		DataStream<Tuple2<Long, Boolean>> events = features
-				.process(new ProcessFunction<Tuple3<Long,Double,Double>, Tuple2<Long, Boolean>>() {
+		DataStream<Tuple3<Long, Boolean, Double>> events = features
+				.process(new ProcessFunction<Tuple3<Long,Double,Double>, Tuple3<Long, Boolean, Double>>() {
 					@Override
-					public void processElement(Tuple3<Long, Double, Double> x_n, Context context, Collector<Tuple2<Long, Boolean>> out) throws Exception {
+					public void processElement(Tuple3<Long, Double, Double> x_n, Context context, Collector<Tuple3<Long, Boolean, Double>> out) throws Exception {
 						eventDetector.numWindowsProcessedSinceLastEventDetected++;
 						//If an event is not detected and w2 has more than 100 elements, empty the window
 						if (eventDetector.numWindowsProcessedSinceLastEventDetected > 100 && !eventDetector.eventDetected) {
@@ -116,12 +136,15 @@ public class Query1 {
 							w2_builder.clear();
 							eventDetector.numWindowsProcessedSinceLastEventDetected = 0;
 						}
-						w2_builder.add(new Point(x_n.f1, x_n.f2));
-						Tuple2<Long, Boolean> ret = eventDetector.predict(x_n.f0, w2_builder.toArray(new Point[w2_builder.size()]));
+						w2_builder.add(new Point(x_n.f1, x_n.f2, x_n.f0));
+						Tuple3<Long, Boolean, Double> ret = eventDetector.predict(x_n.f0, w2_builder.toArray(new Point[w2_builder.size()]));
 						if (ret.f1 == true) {
 							eventDetector.eventDetected = true;
+							eventDetector.numWindowsProcessedSinceLastEventDetected = 0;
+							w2_builder.clear();
 						}
-						requests.post(new Result(ret.f0, ret.f1, 0));
+						requests.post(new Result(ret.f0, ret.f1, ret.f2));
+						System.out.println(ret);
 						out.collect(ret);
 					}
 				});

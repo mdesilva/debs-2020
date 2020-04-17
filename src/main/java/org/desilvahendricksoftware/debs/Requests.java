@@ -66,7 +66,7 @@ public class Requests implements Serializable{
     }
 
     public Sample[] get() {
-        System.out.println("Making batch request");
+        // System.out.println("Making batch request");
         CloseableHttpClient httpclient = HttpClients.createDefault();
         HttpGet getRequest = new HttpGet(this.host + this.endpoint);
         CloseableHttpResponse response = null;
@@ -84,7 +84,7 @@ public class Requests implements Serializable{
     }
 
     public void post(Result result) throws PostRequestFailure {
-        System.out.println("Posting result");
+//       System.out.println("Posting " + result.toString());
         CloseableHttpClient httpClient = HttpClients.createDefault();
         HttpPost postRequest = new HttpPost(this.host + this.endpoint);
         postRequest.setEntity(new StringEntity(JsonWriter.objectToJson(result, JSON_WRITER_ARGS), ContentType.APPLICATION_JSON));
