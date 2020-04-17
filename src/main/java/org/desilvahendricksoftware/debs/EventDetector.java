@@ -1,9 +1,8 @@
 package org.desilvahendricksoftware.debs;
 
-import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.tuple.Tuple3;
 
 import java.io.Serializable;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -43,7 +42,7 @@ public class EventDetector implements Serializable {
             numTotalClustersWithoutNoiseCluster = numTotalClusters;
         }
 
-        //System.out.println("Total number of clusters without noise: " + numTotalClustersWithoutNoiseCluster);
+//        System.out.println("Total number of clusters without noise: " + numTotalClustersWithoutNoiseCluster);
 
         if (numTotalClustersWithoutNoiseCluster < 2) {
             return null;
@@ -67,7 +66,7 @@ public class EventDetector implements Serializable {
 
 
         Cluster[] checkTwoClusters = checkTwoClustersBuilder.toArray(new Cluster[checkTwoClustersBuilder.size()]);
-        //System.out.println("Number of clusters that pass Check 2: " + checkTwoClusters.length);
+//        System.out.println("Number of clusters that pass Check 2: " + checkTwoClusters.length);
         /*
         Check 3:
         We must find all pairs of clusters that do not interleave in the time domain.
@@ -101,7 +100,7 @@ public class EventDetector implements Serializable {
                         return null;
                     } else {
                         /*
-                        Find the events in the noise cluster that are in between the last event of c1 and the first event of c2
+                        Find the events in the noise cluster that are in between the c1.v and the c2.u
                          */
                         int[] c0_indices = noiseCluster.memberIndices;
                         //System.out.println("c0_indices: " + Arrays.toString(c0_indices));
@@ -135,7 +134,7 @@ public class EventDetector implements Serializable {
         if (non_interleaving_cluster_pairs.size() < 1) {
             return null;
         } else {
-            //System.out.println("Passed check 3");
+//            System.out.println("Passed check 3");
             return non_interleaving_cluster_pairs.toArray(new NonInterleavingClusterPair[non_interleaving_cluster_pairs.size()]);
         }
 
@@ -200,7 +199,6 @@ public class EventDetector implements Serializable {
         this.dbscan.fit(X);
 
         int[] clusters_X = this.dbscan.clusters;
-
         int[] cluster_labels = this.dbscan.labels;
         Cluster[] clusters = new Cluster[cluster_labels.length];
         int index = 0;
@@ -223,53 +221,63 @@ public class EventDetector implements Serializable {
         this.clusters = clusters;
     }
 
-    public Tuple2<Long, Boolean> predict(long windowId, Point[] X) {
+    /*
+    windowId represents the windowId of the latest point in X
+    X is a array of (active power, reactive power) features, where each feature is derived from 1000 samples (events)
+     */
+    public Tuple3<Long, Boolean, Double> predict(long windowId, Point[] X) {
+        double event_s = -1; //by default, we return -1 for event_s if no event is detected.
+
         //Forward pass
-
         this.update_clustering_structure(X); //step 2
-
         NonInterleavingClusterPair[] valid_cluster_pairs = this.check_event_model_constraints(); //step 2a
+
+        //We need at least one cluster pair that passes the model constraints to continue
         if (valid_cluster_pairs == null || valid_cluster_pairs.length == 0) {
-            //System.out.println("No valid clusters found");
-            return new Tuple2(windowId, false); //We need at least one cluster pair to continue (e.g no event was detected). Return and take the next sample
+            return new Tuple3(windowId, false, event_s);
         }
+
         //Event detected, so now return the cluster pair with the least model loss
         NonInterleavingClusterPair forward_pass_event_cluster_pair_with_least_loss = this.compute_and_evaluate_loss(valid_cluster_pairs); //step 3
+
+        //We need one cluster pair with model loss < loss threshold.
         if (forward_pass_event_cluster_pair_with_least_loss == null) {
-            return new Tuple2(windowId, false); //No cluster pair was found with model loss < loss threshold. Return and take the next sample
+            return new Tuple3(windowId, false, event_s);
         } else {
             //Begin backwards pass if we found a non interleaving cluster pair with loss < loss threshold
             this.forward_pass_clusters = this.clusters;
             this.backward_pass_clusters = this.forward_pass_clusters;
             NonInterleavingClusterPair last_known_valid_event_cluster_pair_with_least_loss = forward_pass_event_cluster_pair_with_least_loss;
-            for (int i = 0; i < X.length; i++) {
-                Point sample_to_be_cut = X[0];
-                Point[] X_cut = Arrays.copyOfRange(X, i + 1, X.length); //step 5
+            for (int i = 1; i < X.length; i++) {
+                //Iteratively remove the last tuple
+                Point[] X_cut = Arrays.copyOfRange(X, 0, X.length - i); //step 5
                 this.update_clustering_structure(X_cut); //step 6
 
-                //Find all non-interleaving cluster pairs in this cluster structure (same as cluster structure in forward pass except 1st cluster is removed with each iteration)
+                //Find all non-interleaving cluster pairs in this clustering
+                //(same as cluster structure in forward pass except last sample is removed with each iteration)
                 NonInterleavingClusterPair[] backward_pass_checked_clusters = this.check_event_model_constraints();
                 if (backward_pass_checked_clusters == null) {
+//                  System.out.println("Backward pass finished at check event model constraints at iteration " + index);
                     break;
                 } else {
                     NonInterleavingClusterPair current_backward_pass_event_cluster_pair_with_least_loss = this.compute_and_evaluate_loss(backward_pass_checked_clusters);
                     if (current_backward_pass_event_cluster_pair_with_least_loss == null) {
-                        // Without the last sample, no event is detected; so reinsert the last sample back into the window
-                        Point[] XwithLastSample = new Point[X_cut.length + 1];
-                        XwithLastSample[0] = sample_to_be_cut;
-                        for (int j=1; j < XwithLastSample.length; j++) {
-                            XwithLastSample[j] = X_cut[j-1];
-                        }
-                        this.update_clustering_structure(XwithLastSample);
+//                        System.out.println("Backward pass finished at compute loss at iteration " + index);
                         break;
                     } else {
+//                        System.out.println("set last known valid cluster pair");
                         last_known_valid_event_cluster_pair_with_least_loss = current_backward_pass_event_cluster_pair_with_least_loss;
-                        continue;
                     }
                 }
             }
-            //System.out.println("Event detected at " + Arrays.toString(last_known_valid_event_cluster_pair_with_least_loss.event_interval_t));
-            return new Tuple2(windowId, true);
+//            System.out.println(last_known_valid_event_cluster_pair_with_least_loss.toString() + "\n");
+//            System.out.println(Arrays.toString(X) + "\n");
+            int[] event_interval = last_known_valid_event_cluster_pair_with_least_loss.event_interval_t;
+            //TODO: BUG: We are off by two for each detected event. Temporarily fixed by adding 2 to the event start and event end
+            long event_start = X[event_interval[0] + 2].f2;
+            long event_end = X[event_interval[event_interval.length - 1] + 2].f2;
+            event_s = (double) (event_start + event_end) / (double) (2);
+            return new Tuple3(windowId, true, event_s);
         }
     }
 }
