@@ -10,4 +10,9 @@ public class Result {
         this.d = d == true ? 1 : 0 ;
         this.event_s = event_s;
     }
+
+    @Override
+    public String toString() {
+        return "(" + this.s + "," + this.d + "," + this.event_s + ")";
+    }
 }

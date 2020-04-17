@@ -276,7 +276,7 @@ public class EventDetector implements Serializable {
             //TODO: BUG: We are off by two for each detected event. Temporarily fixed by adding 2 to the event start and event end
             long event_start = X[event_interval[0] + 2].f2;
             long event_end = X[event_interval[event_interval.length - 1] + 2].f2;
-            event_s = (double) (event_start + event_end) / (double) (2);
+            event_s = Math.floor( (double) (event_start + event_end) / (double) (2));
             return new Tuple3(windowId, true, event_s);
         }
     }
