@@ -27,7 +27,7 @@ public class Requests implements Serializable{
     String host;
 
     public Requests(int query) throws InvalidQueryException {
-        if (query == QUERY_1 /*|| query == QUERY_2 */) {
+        if (query == QUERY_1 || query == QUERY_2) {
             this.endpoint = "/data/" + query + "/";
         } else {
             throw new InvalidQueryException();

@@ -20,7 +20,7 @@ public class Utils {
             Double temp = voltage[i] * current[i];
             ret += temp;
         }
-        return (double) ret / period;
+        return ret / period;
     }
 
     /**
