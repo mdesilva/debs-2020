@@ -47,27 +47,7 @@ public class Query1 {
 
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 		env.setParallelism(1);
-		// LOCAL
-//		DataStream<String> input = env.readTextFile(AppBase.pathToDatasetForQuery1);
-//
-//		DataStream<Tuple3<Long, Double, Double>> stream = input.map(new MapFunction<String, Tuple3<Long, Double, Double>>() {
-//			@Override
-//			//f0: id, f1; voltage, f2: current
-//			public Tuple3<Long, Double, Double> map(String s) throws Exception {
-//				String[] currentLine = s.split(",");
-//				Long id = Long.parseLong(currentLine[0]);
-//				Double voltage = Double.parseDouble(currentLine[1]);
-//				Double current = Double.parseDouble(currentLine[2]);
-//				Tuple3<Long, Double, Double> ret = new Tuple3<>(id,voltage,current);
-//				return ret;
-//			}
-//		})
-//				.assignTimestampsAndWatermarks(new AscendingTimestampExtractor<Tuple3<Long, Double, Double>>() {
-//					@Override
-//					public long extractAscendingTimestamp(Tuple3<Long, Double, Double> element) {
-//						return element.f0;
-//					}
-//				});
+
 		//PROD
 		DataStream<Sample> input =  env.addSource(new SourceFunction<Sample>() {
 			@Override

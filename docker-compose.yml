@@ -14,11 +14,9 @@ services:
 
   solution:
     container_name: rhetts-solution
-    ports:
-      - "8081:8081"
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.solution
     environment:
       BENCHMARK_SYSTEM_URL: "grader"
     depends_on:
