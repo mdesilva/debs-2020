@@ -225,8 +225,8 @@ public class EventDetector implements Serializable {
     windowId represents the windowId of the latest point in X
     X is a array of (active power, reactive power) features, where each feature is derived from 1000 samples (events)
      */
-    public Tuple3<Long, Boolean, Double> predict(long windowId, Point[] X) {
-        double event_s = -1; //by default, we return -1 for event_s if no event is detected.
+    public Tuple3<Long, Boolean, Integer> predict(long windowId, Point[] X) {
+        int event_s = -1; //by default, we return -1 for event_s if no event is detected.
 
         //Forward pass
         this.update_clustering_structure(X); //step 2
@@ -245,38 +245,28 @@ public class EventDetector implements Serializable {
             return new Tuple3(windowId, false, event_s);
         } else {
             //Begin backwards pass if we found a non interleaving cluster pair with loss < loss threshold
-            this.forward_pass_clusters = this.clusters;
-            this.backward_pass_clusters = this.forward_pass_clusters;
-            NonInterleavingClusterPair last_known_valid_event_cluster_pair_with_least_loss = forward_pass_event_cluster_pair_with_least_loss;
+            NonInterleavingClusterPair balanced_event = forward_pass_event_cluster_pair_with_least_loss;
+            int iterations = 2;
             for (int i = 1; i < X.length; i++) {
-                //Iteratively remove the last tuple
-                Point[] X_cut = Arrays.copyOfRange(X, 0, X.length - i); //step 5
-                this.update_clustering_structure(X_cut); //step 6
-
-                //Find all non-interleaving cluster pairs in this clustering
-                //(same as cluster structure in forward pass except last sample is removed with each iteration)
-                NonInterleavingClusterPair[] backward_pass_checked_clusters = this.check_event_model_constraints();
-                if (backward_pass_checked_clusters == null) {
-//                  System.out.println("Backward pass finished at check event model constraints at iteration " + index);
+                Point[] X_without_oldest_sample = Arrays.copyOfRange(X, i, X.length);
+                this.update_clustering_structure(X_without_oldest_sample);
+                NonInterleavingClusterPair[] valid_bp_cluster_pairs = this.check_event_model_constraints();
+                if (valid_bp_cluster_pairs == null) {
                     break;
-                } else {
-                    NonInterleavingClusterPair current_backward_pass_event_cluster_pair_with_least_loss = this.compute_and_evaluate_loss(backward_pass_checked_clusters);
-                    if (current_backward_pass_event_cluster_pair_with_least_loss == null) {
-//                        System.out.println("Backward pass finished at compute loss at iteration " + index);
-                        break;
-                    } else {
-//                        System.out.println("set last known valid cluster pair");
-                        last_known_valid_event_cluster_pair_with_least_loss = current_backward_pass_event_cluster_pair_with_least_loss;
-                    }
                 }
+                NonInterleavingClusterPair bp_balanced_event = this.compute_and_evaluate_loss(valid_bp_cluster_pairs);
+                if (bp_balanced_event == null) {
+                    break;
+                }
+                balanced_event = bp_balanced_event;
+                iterations++;
             }
-//            System.out.println(last_known_valid_event_cluster_pair_with_least_loss.toString() + "\n");
+//            System.out.println(balanced_event.toString() + "\n");
 //            System.out.println(Arrays.toString(X) + "\n");
-            int[] event_interval = last_known_valid_event_cluster_pair_with_least_loss.event_interval_t;
-            //TODO: BUG: We are off by two for each detected event. Temporarily fixed by adding 2 to the event start and event end
-            long event_start = X[event_interval[0] + 2].f2;
-            long event_end = X[event_interval[event_interval.length - 1] + 2].f2;
-            event_s = Math.floor( (double) (event_start + event_end) / (double) (2));
+            int[] event_interval = balanced_event.event_interval_t;
+            long event_start = X[event_interval[0]+iterations].f2;
+            long event_end = X[event_interval[event_interval.length - 1]+iterations].f2;
+            event_s = (int) Math.round(Math.floor( (double) (event_start + event_end) / (double) (2)));
             return new Tuple3(windowId, true, event_s);
         }
     }
