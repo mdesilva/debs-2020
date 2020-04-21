@@ -73,7 +73,9 @@ public class Requests implements Serializable{
         try {
             response = httpclient.execute(getRequest);
             String responseContent = EntityUtils.toString(response.getEntity());
-            if (!responseContent.contains("record")) {
+            //Empty record set is returned as {'records': ''} with status code 200
+            if (!responseContent.contains("voltage") || !responseContent.contains("current")) {
+//                System.out.println("Reached end of records");
                 return null;
             }
             return serializeRecordsToSamples(responseContent);
