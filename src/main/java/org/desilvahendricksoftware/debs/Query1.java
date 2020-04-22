@@ -18,7 +18,6 @@
 
 package org.desilvahendricksoftware.debs;
 
-import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -49,11 +48,11 @@ public class Query1 {
 
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 		env.setParallelism(1);
-		env.getConfig().setAutoWatermarkInterval(50);
+		env.getConfig().setAutoWatermarkInterval(5);
 
-		DataStream<Sample> input =  env.addSource(new SourceFunction<Sample>() {
+		DataStream<Tuple3<Long, Double, Double>> input =  env.addSource(new SourceFunction<Tuple3<Long, Double, Double>>() {
 			@Override
-			public void run(SourceContext<Sample> sourceContext) throws Exception {
+			public void run(SourceContext<Tuple3<Long, Double, Double>> sourceContext) throws Exception {
 				Sample[] batch;
 				boolean serverIsReady = false;
 				int timeSpentWaiting = 0;
@@ -66,7 +65,7 @@ public class Query1 {
 						//Try to get the first batch
 						batch = requests.get();
 						for (Sample sample: batch) {
-							sourceContext.collect(sample);
+							sourceContext.collect(new Tuple3(sample.i, sample.voltage, sample.current));
 						}
 						serverIsReady = true;
 						System.out.println("Server is ready for Query 1. Collecting samples...");
@@ -78,34 +77,21 @@ public class Query1 {
 				}
 				while ((batch = requests.get()) != null) {
 					for (Sample sample: batch) {
-						sourceContext.collect(sample);
+						sourceContext.collect(new Tuple3(sample.i, sample.voltage, sample.current));
 					}
 				}
 			}
 			@Override
 			public void cancel() {}
+		})
+		.assignTimestampsAndWatermarks(new AscendingTimestampExtractor<Tuple3<Long, Double, Double>>() {
+			@Override
+			public long extractAscendingTimestamp(Tuple3<Long, Double, Double> element) {
+				return element.f0;
+			}
 		});
 
-		//process each record from the json output here and assign watermarks to each record.
-		DataStream<Tuple3<Long, Double, Double>> samples = input.map(new MapFunction<Sample, Tuple3<Long, Double, Double>>() {
-			@Override
-			//f0: id, f1; voltage, f2: current
-			public Tuple3<Long, Double, Double> map(Sample sample) throws Exception {
-				Long id = sample.i;
-				Double voltage = sample.voltage;
-				Double current = sample.current;
-				Tuple3<Long, Double, Double> ret = new Tuple3<>(id,voltage,current);
-				return ret;
-			}
-			})
-			.assignTimestampsAndWatermarks(new AscendingTimestampExtractor<Tuple3<Long, Double, Double>>() {
-				@Override
-				public long extractAscendingTimestamp(Tuple3<Long, Double, Double> element) {
-					return element.f0;
-				}
-			});
-
-		DataStream<Tuple3<Long, Double, Double>> features = samples
+		DataStream<Tuple3<Long, Double, Double>> features = input
 				.windowAll(SlidingEventTimeWindows.of(Time.milliseconds(windowSize), Time.milliseconds(windowSize)))
 				.process(new ProcessAllWindowFunction<Tuple3<Long, Double, Double>, Tuple3<Long, Double, Double>, TimeWindow>() {
 					@Override
