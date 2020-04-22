@@ -49,6 +49,7 @@ public class Query1 {
 
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 		env.setParallelism(1);
+		env.getConfig().setAutoWatermarkInterval(50);
 
 		//PROD
 		DataStream<Sample> input =  env.addSource(new SourceFunction<Sample>() {
