@@ -124,7 +124,7 @@ public class Query1 {
 							w2_builder.clear();
 						}
 						requests.post(new Result(ret.f0, ret.f1, ret.f2));
-//						System.out.println(ret);
+						System.out.println(ret);
 						out.collect(ret);
 					}
 				});

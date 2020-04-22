@@ -114,13 +114,12 @@ public class Query2 {
                             w2_builder.clear();
                         }
                         requests.post(new Result(ret.f0, ret.f1, ret.f2));
-//                        System.out.println(ret);
+//                      System.out.println(ret);
                         out.collect(ret);
                     }
                 });
 
-        // execute program
-        env.execute("DEBS 2020: Query 1");
+        env.execute("DEBS 2020: Query 2");
     }
 
     public static void main(String[] args) throws Exception {
