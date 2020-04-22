@@ -51,7 +51,6 @@ public class Query1 {
 		env.setParallelism(1);
 		env.getConfig().setAutoWatermarkInterval(50);
 
-		//PROD
 		DataStream<Sample> input =  env.addSource(new SourceFunction<Sample>() {
 			@Override
 			public void run(SourceContext<Sample> sourceContext) throws Exception {
