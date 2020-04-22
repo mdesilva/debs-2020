@@ -37,7 +37,7 @@ import java.util.ArrayList;
 public class Query1 {
 
 
-	public static void main(String[] args) throws Exception, Requests.InvalidQueryException {
+	public static void run() throws Exception, Requests.InvalidQueryException {
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		final int windowSize = 1000;
 
@@ -131,5 +131,10 @@ public class Query1 {
 
 		// execute program
 		env.execute("DEBS 2020: Query 1");
+		requests.get(); //Finished processing all the records, so now make the final get to fetch the score
+	}
+
+	public static void main(String[] args) throws Exception {
+		Query1.run();
 	}
 }
