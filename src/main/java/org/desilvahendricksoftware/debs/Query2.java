@@ -120,6 +120,7 @@ public class Query2 {
                 });
 
         // execute program
-        env.execute("DEBS 2020: Query 1");
+        env.execute("DEBS 2020: Query 2");
+        requests.get();
     }
 }

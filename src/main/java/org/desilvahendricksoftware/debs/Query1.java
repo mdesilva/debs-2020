@@ -151,5 +151,6 @@ public class Query1 {
 
 		// execute program
 		env.execute("DEBS 2020: Query 1");
+		requests.get();
 	}
 }
