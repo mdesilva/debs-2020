@@ -16,7 +16,7 @@ services:
     container_name: rhetts-solution
     build:
       context: .
-      dockerfile: Dockerfile.solution
+      dockerfile: Dockerfile
     environment:
       BENCHMARK_SYSTEM_URL: "grader"
     depends_on:
