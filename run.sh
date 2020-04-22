@@ -1,5 +1,5 @@
 /opt/flink/bin/start-cluster.sh
 echo "Cluster started"
-echo "Starting Query 1 ..."
+echo "Running Queries 1 and 2"
 flink run Query1.jar
-echo "Query 1 complete"
+echo "Run complete"

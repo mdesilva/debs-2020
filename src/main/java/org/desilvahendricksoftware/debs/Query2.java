@@ -120,6 +120,7 @@ public class Query2 {
                 });
 
         env.execute("DEBS 2020: Query 2");
+        requests.get();
     }
 
     public static void main(String[] args) throws Exception {
