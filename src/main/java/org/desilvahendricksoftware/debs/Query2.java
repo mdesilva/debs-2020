@@ -69,7 +69,6 @@ public class Query2 {
                 .process(new ProcessAllWindowFunction<Tuple3<Long, Double, Double>, Tuple3<Long, Double, Double>, TimeWindow>() {
                     @Override
                     public void process(Context context, Iterable<Tuple3<Long, Double, Double>> iterable, Collector<Tuple3<Long, Double, Double>> collector) throws Exception {
-                        //System.out.println(context.window().getStart() + " " + context.window().maxTimestamp());
                         Double[] voltages = new Double[windowSize];
                         Double[] currents = new Double[windowSize];
                         int index = 0;
@@ -79,10 +78,11 @@ public class Query2 {
                             index++;
                         }
                         for (int i = 0; i < windowSize; i++) {
-                            if (voltages[i] == null)
+                            if (voltages[i] == null || currents[i] == null) {
+//                                System.out.println("here");
                                 return;
-                            if (currents[i] == null)
-                                return;
+                            }
+
                         }
 
                         //calculate active and reactive power features
@@ -114,7 +114,7 @@ public class Query2 {
                             w2_builder.clear();
                         }
                         requests.post(new Result(ret.f0, ret.f1, ret.f2));
-//                        System.out.println(ret);
+                        System.out.println(ret);
                         out.collect(ret);
                     }
                 });
