@@ -65,24 +65,19 @@ public class Requests implements Serializable{
         return samples.toArray(new Sample[samples.size()]);
     }
 
-    public Sample[] get() {
+    public Sample[] get() throws IOException {
         // System.out.println("Making batch request");
         CloseableHttpClient httpclient = HttpClients.createDefault();
         HttpGet getRequest = new HttpGet(this.host + this.endpoint);
         CloseableHttpResponse response = null;
-        try {
-            response = httpclient.execute(getRequest);
-            String responseContent = EntityUtils.toString(response.getEntity());
-            //Empty record set is returned as {'records': ''} with status code 200
-            if (!responseContent.contains("voltage") || !responseContent.contains("current")) {
+        response = httpclient.execute(getRequest);
+        String responseContent = EntityUtils.toString(response.getEntity());
+        //Empty record set is returned as {'records': ''} with status code 200
+        if (!responseContent.contains("voltage") || !responseContent.contains("current")) {
 //                System.out.println("Reached end of records");
-                return null;
-            }
-            return serializeRecordsToSamples(responseContent);
-        } catch (IOException e) {
-            e.printStackTrace();
             return null;
         }
+        return serializeRecordsToSamples(responseContent);
     }
 
     public void post(Result result) throws PostRequestFailure {

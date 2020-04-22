@@ -32,6 +32,7 @@ import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.util.Collector;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class Query1 {
@@ -40,7 +41,8 @@ public class Query1 {
 	public static void run() throws Exception, Requests.InvalidQueryException {
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		final int windowSize = 1000;
-
+		final int MAX_TIMEOUT = 900000; //Max timeout of 15 minutes, or 900000ms until give up to make the first connection
+		final int WAIT_TIME = 5000; //Wait 5 seconds between requests when attempting to make the first request
 		Requests requests = new Requests(1);
 		ArrayList<Point> w2_builder = new ArrayList<>(); //TODO: Determine how to correctly store a list of features.
 		EventDetector eventDetector = new EventDetector(0.03, 2, 0.8, 40); /* Using hyper parameters from Python solution for now */
@@ -53,6 +55,27 @@ public class Query1 {
 			@Override
 			public void run(SourceContext<Sample> sourceContext) throws Exception {
 				Sample[] batch;
+				boolean serverIsReady = false;
+				int timeSpentWaiting = 0;
+				while (!serverIsReady) {
+					if (timeSpentWaiting >= MAX_TIMEOUT) {
+						System.out.println("Timed out");
+						return;
+					}
+					try {
+						//Try to get the first batch
+						batch = requests.get();
+						for (Sample sample: batch) {
+							sourceContext.collect(sample);
+						}
+						serverIsReady = true;
+						System.out.println("Server is ready for Query 1. Collecting samples...");
+					} catch (IOException e) {
+						System.out.println("Server still not ready. Waiting " + WAIT_TIME / 1000 + " seconds to try again.");
+						Thread.sleep(WAIT_TIME);
+						timeSpentWaiting = timeSpentWaiting + WAIT_TIME;
+					}
+				}
 				while ((batch = requests.get()) != null) {
 					for (Sample sample: batch) {
 						sourceContext.collect(sample);
@@ -124,7 +147,7 @@ public class Query1 {
 							w2_builder.clear();
 						}
 						requests.post(new Result(ret.f0, ret.f1, ret.f2));
-						System.out.println(ret);
+//						System.out.println(ret);
 						out.collect(ret);
 					}
 				});
