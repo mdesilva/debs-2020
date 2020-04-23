@@ -129,6 +129,7 @@ public class Query2 {
 
         env.execute("DEBS 2020: Query 2");
         System.out.println("Query 2 complete.");
+        requests.get();
         System.out.println("Results for both queries: " + requests.get("/score/all")); //Get full score for query1 and query2
     }
 

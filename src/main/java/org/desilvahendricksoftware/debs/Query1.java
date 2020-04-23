@@ -141,6 +141,7 @@ public class Query1 {
 		// execute program
 		env.execute("DEBS 2020: Query 1");
 		System.out.println("Query 1 complete.");
+		requests.get();
 	}
 
 	public static void main(String[] args) throws Exception {
