@@ -80,6 +80,20 @@ public class Requests implements Serializable{
         return serializeRecordsToSamples(responseContent);
     }
 
+    public String get(String endpoint) {
+        CloseableHttpClient httpclient = HttpClients.createDefault();
+        HttpGet getRequest = new HttpGet(this.host + endpoint);
+        CloseableHttpResponse response = null;
+        try {
+            response = httpclient.execute(getRequest);
+            String responseContent = EntityUtils.toString(response.getEntity());
+            return responseContent;
+        } catch (IOException e) {
+            return null;
+        }
+
+    }
+
     public void post(Result result) throws PostRequestFailure {
 //       System.out.println("Posting " + result.toString());
         CloseableHttpClient httpClient = HttpClients.createDefault();

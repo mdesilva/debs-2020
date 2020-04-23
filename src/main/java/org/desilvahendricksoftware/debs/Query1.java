@@ -140,7 +140,7 @@ public class Query1 {
 
 		// execute program
 		env.execute("DEBS 2020: Query 1");
-		requests.get(); //Finished processing all the records, so now make the final get to fetch the score
+		System.out.println("Query 1 complete.");
 	}
 
 	public static void main(String[] args) throws Exception {
