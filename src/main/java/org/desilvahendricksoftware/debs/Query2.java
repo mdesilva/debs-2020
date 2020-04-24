@@ -6,6 +6,7 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
+import org.apache.flink.streaming.api.functions.timestamps.AscendingTimestampExtractor;
 import org.apache.flink.streaming.api.functions.timestamps.BoundedOutOfOrdernessTimestampExtractor;
 import org.apache.flink.streaming.api.functions.windowing.ProcessAllWindowFunction;
 import org.apache.flink.streaming.api.windowing.assigners.SlidingEventTimeWindows;
@@ -15,6 +16,7 @@ import org.apache.flink.util.Collector;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class Query2 {
 
@@ -65,9 +67,9 @@ public class Query2 {
             @Override
             public void cancel() {}
         })
-                .assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor<Tuple3<Long, Double, Double>>(Time.milliseconds(1)) {
+                .assignTimestampsAndWatermarks(new AscendingTimestampExtractor<Tuple3<Long, Double, Double>>() {
                     @Override
-                    public long extractTimestamp(Tuple3<Long, Double, Double> element) {
+                    public long extractAscendingTimestamp(Tuple3<Long, Double, Double> element) {
                         return element.f0;
                     }
                 });
@@ -88,8 +90,9 @@ public class Query2 {
                         for (int i = 0; i < windowSize; i++) {
                             if (voltages[i] == null || currents[i] == null) {
 //                                System.out.println("here");
-                                voltages[i] = 2.0;
-                                currents[i] = 2.0;
+                                Double[] voltageRange = Arrays.copyOfRange(voltages, 0, i);
+                                Double[] currentsRange = Arrays.copyOfRange(voltages, 0, i);
+
                             }
 
                         }
@@ -122,6 +125,16 @@ public class Query2 {
                             eventDetector.numWindowsProcessedSinceLastEventDetected = 0;
                             w2_builder.clear();
                         }
+
+
+                        long old = eventDetector.countedSoFar;
+                        long n = ret.f0;
+                        while(old<n-1){
+                            old++;
+                            requests.post(new Result(old, false, -1));
+                        }
+                        eventDetector.countedSoFar = n;
+
                         requests.post(new Result(ret.f0, ret.f1, ret.f2));
 //                      System.out.println(ret);
                         out.collect(ret);
