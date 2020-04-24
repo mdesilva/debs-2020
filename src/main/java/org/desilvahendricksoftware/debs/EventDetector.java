@@ -77,7 +77,7 @@ public class EventDetector implements Serializable {
 
         ArrayList<NonInterleavingClusterPair> non_interleaving_cluster_pairs = new ArrayList<>();
         for (int i = 0; i < checkTwoClusters.length; i++) {
-            for (int j = 1; j < checkTwoClusters.length; j++) {
+            for (int j = i+1; j < checkTwoClusters.length; j++) {
                 Cluster cluster_i = checkTwoClusters[i];
                 Cluster cluster_j = checkTwoClusters[j];
                 //System.out.println(cluster_i.toString());

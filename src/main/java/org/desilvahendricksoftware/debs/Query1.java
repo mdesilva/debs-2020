@@ -63,7 +63,7 @@ public class Query1 {
 					}
 					try {
 						//Try to get the first batch
-						batch = requests.get();
+						batch = requests.getSample();
 						for (Sample sample: batch) {
 							sourceContext.collect(new Tuple3(sample.i, sample.voltage, sample.current));
 						}
@@ -75,7 +75,7 @@ public class Query1 {
 						timeSpentWaiting = timeSpentWaiting + WAIT_TIME;
 					}
 				}
-				while ((batch = requests.get()) != null) {
+				while ((batch = requests.getSample()) != null) {
 					for (Sample sample: batch) {
 						sourceContext.collect(new Tuple3(sample.i, sample.voltage, sample.current));
 					}
@@ -140,7 +140,7 @@ public class Query1 {
 		// execute program
 		env.execute("DEBS 2020: Query 1");
 		System.out.println("Query 1 complete.");
-		requests.get();
+		System.out.println(requests.get(requests.endpoint));
 	}
 
 	public static void main(String[] args) throws Exception {

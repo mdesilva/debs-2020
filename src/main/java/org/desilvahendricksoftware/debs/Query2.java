@@ -7,7 +7,6 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.streaming.api.functions.timestamps.AscendingTimestampExtractor;
-import org.apache.flink.streaming.api.functions.timestamps.BoundedOutOfOrdernessTimestampExtractor;
 import org.apache.flink.streaming.api.functions.windowing.ProcessAllWindowFunction;
 import org.apache.flink.streaming.api.windowing.assigners.SlidingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
@@ -57,7 +56,7 @@ public class Query2 {
                     }
                     try {
                         //Try to get the first batch
-                        batch = requests.get();
+                        batch = requests.getSample();
                         for (Sample sample: batch) {
                             sourceContext.collect(new Tuple3(sample.i, sample.voltage, sample.current));
                         }
@@ -69,7 +68,7 @@ public class Query2 {
                         timeSpentWaiting = timeSpentWaiting + WAIT_TIME;
                     }
                 }
-                while ((batch = requests.get()) != null) {
+                while ((batch = requests.getSample()) != null) {
                     for (Sample sample: batch) {
                         sourceContext.collect(new Tuple3(sample.i, sample.voltage, sample.current));
                     }
@@ -145,7 +144,7 @@ public class Query2 {
 
         env.execute("DEBS 2020: Query 2");
         System.out.println("Query 2 complete.");
-        requests.get();
+        System.out.println(requests.get(requests.endpoint));
     }
 
     public static void main(String[] args) throws Exception {
