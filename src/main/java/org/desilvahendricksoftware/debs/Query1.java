@@ -40,7 +40,7 @@ public class Query1 {
 	public static void run() throws Exception, Requests.InvalidQueryException {
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		final int windowSize = 1000;
-		final int MAX_TIMEOUT = 900000; //Max timeout of 15 minutes, or 900000ms until give up to make the first connection
+		final int MAX_TIMEOUT = 25200000; //Max timeout of 7 hours until give up to make the first connection
 		final int WAIT_TIME = 5000; //Wait 5 seconds between requests when attempting to make the first request
 		Requests requests = new Requests(1);
 		ArrayList<Point> w2_builder = new ArrayList<>(); //TODO: Determine how to correctly store a list of features.
