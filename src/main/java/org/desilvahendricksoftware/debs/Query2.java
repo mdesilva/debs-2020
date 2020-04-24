@@ -127,30 +127,18 @@ public class Query2 {
                     public void processElement(Tuple3<Long, Double, Double> x_n, Context context, Collector<Tuple3<Long, Boolean, Integer>> out) throws Exception {
                         eventDetector.numWindowsProcessedSinceLastEventDetected++;
                         //If an event is not detected and w2 has more than 100 elements, empty the window
-                        if (eventDetector.numWindowsProcessedSinceLastEventDetected > 100 && !eventDetector.eventDetected) {
-                            //System.out.println("Emptying the window");
+                        if (eventDetector.numWindowsProcessedSinceLastEventDetected > 100) {
                             w2_builder.clear();
                             eventDetector.numWindowsProcessedSinceLastEventDetected = 0;
                         }
                         w2_builder.add(new Point(x_n.f1, x_n.f2, x_n.f0));
                         Tuple3<Long, Boolean, Integer> ret = eventDetector.predict(x_n.f0, w2_builder.toArray(new Point[w2_builder.size()]));
                         if (ret.f1 == true) {
-                            eventDetector.eventDetected = true;
                             eventDetector.numWindowsProcessedSinceLastEventDetected = 0;
                             w2_builder.clear();
                         }
 
-//
-//                        long old = eventDetector.countedSoFar;
-//                        long n = ret.f0;
-//                        while(old<n-1){
-//                            old++;
-//                            requests.post(new Result(old, false, -1));
-//                        }
-//                        eventDetector.countedSoFar = n;
-
                         requests.post(new Result(ret.f0, ret.f1, ret.f2));
-//                        System.out.println(ret);
                         out.collect(ret);
                     }
                 });
