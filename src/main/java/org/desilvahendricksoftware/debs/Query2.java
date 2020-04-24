@@ -123,7 +123,7 @@ public class Query2 {
                             w2_builder.clear();
                         }
                         requests.post(new Result(ret.f0, ret.f1, ret.f2));
-//                      System.out.println(ret);
+//                        System.out.println(ret);
                         out.collect(ret);
                     }
                 });
@@ -131,7 +131,6 @@ public class Query2 {
         env.execute("DEBS 2020: Query 2");
         System.out.println("Query 2 complete.");
         requests.get();
-        System.out.println("Results for both queries: " + requests.get("/score/all")); //Get full score for query1 and query2
     }
 
     public static void main(String[] args) throws Exception {
