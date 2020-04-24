@@ -65,7 +65,7 @@ public class Query2 {
             @Override
             public void cancel() {}
         })
-                .assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor<Tuple3<Long, Double, Double>>(Time.milliseconds(20000)) {
+                .assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor<Tuple3<Long, Double, Double>>(Time.milliseconds(1)) {
                     @Override
                     public long extractTimestamp(Tuple3<Long, Double, Double> element) {
                         return element.f0;
@@ -73,7 +73,7 @@ public class Query2 {
                 });
 
         DataStream<Tuple3<Long, Double, Double>> features = input
-                .windowAll(SlidingEventTimeWindows.of(Time.milliseconds(windowSize), Time.milliseconds(windowSize))).allowedLateness(Time.milliseconds(20000))
+                .windowAll(SlidingEventTimeWindows.of(Time.milliseconds(windowSize), Time.milliseconds(windowSize)))
                 .process(new ProcessAllWindowFunction<Tuple3<Long, Double, Double>, Tuple3<Long, Double, Double>, TimeWindow>() {
                     @Override
                     public void process(Context context, Iterable<Tuple3<Long, Double, Double>> iterable, Collector<Tuple3<Long, Double, Double>> collector) throws Exception {
@@ -88,7 +88,8 @@ public class Query2 {
                         for (int i = 0; i < windowSize; i++) {
                             if (voltages[i] == null || currents[i] == null) {
 //                                System.out.println("here");
-                                return;
+                                voltages[i] = 2.0;
+                                currents[i] = 2.0;
                             }
 
                         }
