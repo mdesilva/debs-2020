@@ -16,6 +16,7 @@ public class EventDetector implements Serializable {
     double lossThresholdLambda;
     boolean eventDetected = false;
     int numWindowsProcessedSinceLastEventDetected = 0; //if we hit 100 windows and we still haven't detected an event, remove the earliest pair of features from X
+    long countedSoFar = 0;
 
     public EventDetector(double dbscan_epsilon, int dbscan_minPoints, double temporalLocalityEpsilon, double lossThresholdLambda) {
         this.temporalLocalityEpsilon = temporalLocalityEpsilon;

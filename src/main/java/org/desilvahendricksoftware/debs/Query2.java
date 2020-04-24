@@ -121,8 +121,20 @@ public class Query2 {
                             eventDetector.numWindowsProcessedSinceLastEventDetected = 0;
                             w2_builder.clear();
                         }
+//
+//                        long old = eventDetector.countedSoFar; //7
+//                        long current = ret.f0; // 10
+//                        for(long i = old+1; i < current; i++ ){
+//                            requests.post(new Result(i, false, -1));
+//                        }
+//
+//
+//
+//                        eventDetector.countedSoFar = current;
+
+
                         requests.post(new Result(ret.f0, ret.f1, ret.f2));
-//                      System.out.println(ret);
+                        //System.out.println(ret);
                         out.collect(ret);
                     }
                 });

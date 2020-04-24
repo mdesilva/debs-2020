@@ -6,9 +6,10 @@ import java.util.*;
 
 public class DBSCAN implements Serializable{
 
-    private double epsilon;
-    private int minPoints;
-    private HashSet<Point> visitedPoints = new HashSet<>();
+    public static double epsilon;
+    public static int minPoints;
+    public static HashSet<Point> visitedPoints = new HashSet<>();
+    public static ArrayList res = new ArrayList();
     public int[] clusters;
     public int[] labels;
     public boolean hasNoiseCluster;
@@ -19,57 +20,50 @@ public class DBSCAN implements Serializable{
         this.minPoints = minPoints;
     }
 
-    public double getEpsilon() {
-        return this.epsilon;
-    }
-
-    public int getMinPoints() {
-        return this.minPoints;
-    }
 
     //TODO: test
     public ArrayList<ArrayList<Point>> performDBSCANHelper(Point[] points){
-        int index = 0;
-        ArrayList<ArrayList<Point>> res = new ArrayList<>();
         visitedPoints.clear();
-        while (index < points.length){
-            Point current = points[index];
-            if(!visitedPoints.contains(current)){
-                visitedPoints.add(current);
-                ArrayList<Point> neighbors = getNeighbors(current,points);
-                if(neighbors.size() >= this.minPoints){
-                    int ind = 0;
-                    while(ind < neighbors.size()){
-                        Point curr = neighbors.get(ind);
-                        if(!visitedPoints.contains(curr)){
-                            visitedPoints.add(curr);
-                            ArrayList<Point> indivNeighbors = getNeighbors(curr,points);
-                            if(indivNeighbors.size() >= this.minPoints){
-                                neighbors = mergeRightToLeftCollection(neighbors, indivNeighbors);
-                            }
-                        }
-                        ind++;
-                    }
-                    res.add(neighbors);
-                }
-            }
-            index++;
+        res.clear();
+
+        int spacing = points.length / 2;
+
+        DBSCANHelper t1 = new DBSCANHelper(Arrays.copyOfRange(points, 0, spacing), points);
+        t1.start();
+
+        DBSCANHelper t2 = new DBSCANHelper(Arrays.copyOfRange(points, spacing, spacing * 2), points);
+        t2.start();
+
+//        DBSCANHelper t3 = new DBSCANHelper(Arrays.copyOfRange(points, spacing*2, spacing*3), points);
+//        t3.start();
+//
+//        DBSCANHelper t4 = new DBSCANHelper(Arrays.copyOfRange(points, spacing*3, points.length), points);
+//        t4.start();
+
+        try {
+            t1.join();
+            t2.join();
+//            t3.join();
+//            t4.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
+
         return res;
     }
 
-    public ArrayList<Point> getNeighbors(Point input, Point[] points ){
+    public static ArrayList<Point> getNeighbors(Point input, Point[] points, double epsilon ){
         ArrayList<Point> ret = new ArrayList<Point>();
         for(int i = 0; i < points.length; i++){
             Point candidate = points[i];
-            if(calculateDistance(candidate,input) <= this.epsilon){
+            if(calculateDistance(candidate,input) <= epsilon){
                 ret.add(candidate);
             }
         }
         return ret;
     }
 
-    public ArrayList<Point> mergeRightToLeftCollection(ArrayList<Point> neighbors1, ArrayList<Point> neighbors2){
+    public static ArrayList<Point> mergeRightToLeftCollection(ArrayList<Point> neighbors1, ArrayList<Point> neighbors2){
         for (int i = 0; i < neighbors2.size(); i++) {
             Point tempPt = neighbors2.get(i);
             if (!neighbors1.contains(tempPt)) {
@@ -84,6 +78,7 @@ public class DBSCAN implements Serializable{
         double pow2 = Math.pow(pointTwo.f1-pointOne.f1,2.0);
         return Math.sqrt(pow1 + pow2);
     }
+
 
     public void fit(Point[] points){
         int clusters[] = new int[points.length];
