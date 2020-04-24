@@ -19,6 +19,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 public class Query2 {
+    public static double sum(Double[] array) {
+        int sum = 0;
+        for (double value : array) {
+            sum += value;
+        }
+        return sum;
+    }
+    public static double avg(Double[] array) {
+        double sum = sum(array);
+        return sum / array.length;
+    }
 
     public static void run() throws Exception {
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -92,6 +103,9 @@ public class Query2 {
 //                                System.out.println("here");
                                 Double[] voltageRange = Arrays.copyOfRange(voltages, 0, i);
                                 Double[] currentsRange = Arrays.copyOfRange(voltages, 0, i);
+                                voltages[i] = avg(voltageRange) + Math.random() * 0.03;
+                                currents[i] = avg(currentsRange) + Math.random() * 0.03;
+
 
                             }
 
@@ -126,14 +140,14 @@ public class Query2 {
                             w2_builder.clear();
                         }
 
-
-                        long old = eventDetector.countedSoFar;
-                        long n = ret.f0;
-                        while(old<n-1){
-                            old++;
-                            requests.post(new Result(old, false, -1));
-                        }
-                        eventDetector.countedSoFar = n;
+//
+//                        long old = eventDetector.countedSoFar;
+//                        long n = ret.f0;
+//                        while(old<n-1){
+//                            old++;
+//                            requests.post(new Result(old, false, -1));
+//                        }
+//                        eventDetector.countedSoFar = n;
 
                         requests.post(new Result(ret.f0, ret.f1, ret.f2));
 //                        System.out.println(ret);
