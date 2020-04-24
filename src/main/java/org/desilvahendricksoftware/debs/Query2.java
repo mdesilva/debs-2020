@@ -6,6 +6,7 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
+import org.apache.flink.streaming.api.functions.timestamps.AscendingTimestampExtractor;
 import org.apache.flink.streaming.api.functions.timestamps.BoundedOutOfOrdernessTimestampExtractor;
 import org.apache.flink.streaming.api.functions.windowing.ProcessAllWindowFunction;
 import org.apache.flink.streaming.api.windowing.assigners.SlidingEventTimeWindows;
@@ -15,8 +16,20 @@ import org.apache.flink.util.Collector;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class Query2 {
+    public static double sum(Double[] array) {
+        int sum = 0;
+        for (double value : array) {
+            sum += value;
+        }
+        return sum;
+    }
+    public static double avg(Double[] array) {
+        double sum = sum(array);
+        return sum / array.length;
+    }
 
     public static void run() throws Exception {
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -65,15 +78,15 @@ public class Query2 {
             @Override
             public void cancel() {}
         })
-        .assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor<Tuple3<Long, Double, Double>>(Time.milliseconds(20000)) {
-            @Override
-            public long extractTimestamp(Tuple3<Long, Double, Double> element) {
-                return element.f0;
-            }
-        });
+                .assignTimestampsAndWatermarks(new AscendingTimestampExtractor<Tuple3<Long, Double, Double>>() {
+                    @Override
+                    public long extractAscendingTimestamp(Tuple3<Long, Double, Double> element) {
+                        return element.f0;
+                    }
+                });
 
         DataStream<Tuple3<Long, Double, Double>> features = input
-                .windowAll(SlidingEventTimeWindows.of(Time.milliseconds(windowSize), Time.milliseconds(windowSize))).allowedLateness(Time.milliseconds(20000))
+                .windowAll(SlidingEventTimeWindows.of(Time.milliseconds(windowSize), Time.milliseconds(windowSize)))
                 .process(new ProcessAllWindowFunction<Tuple3<Long, Double, Double>, Tuple3<Long, Double, Double>, TimeWindow>() {
                     @Override
                     public void process(Context context, Iterable<Tuple3<Long, Double, Double>> iterable, Collector<Tuple3<Long, Double, Double>> collector) throws Exception {
@@ -88,7 +101,12 @@ public class Query2 {
                         for (int i = 0; i < windowSize; i++) {
                             if (voltages[i] == null || currents[i] == null) {
 //                                System.out.println("here");
-                                return;
+                                Double[] voltageRange = Arrays.copyOfRange(voltages, 0, i);
+                                Double[] currentsRange = Arrays.copyOfRange(voltages, 0, i);
+                                voltages[i] = avg(voltageRange) + Math.random() * 0.03;
+                                currents[i] = avg(currentsRange) + Math.random() * 0.03;
+
+
                             }
 
                         }
@@ -121,8 +139,18 @@ public class Query2 {
                             eventDetector.numWindowsProcessedSinceLastEventDetected = 0;
                             w2_builder.clear();
                         }
+
+//
+//                        long old = eventDetector.countedSoFar;
+//                        long n = ret.f0;
+//                        while(old<n-1){
+//                            old++;
+//                            requests.post(new Result(old, false, -1));
+//                        }
+//                        eventDetector.countedSoFar = n;
+
                         requests.post(new Result(ret.f0, ret.f1, ret.f2));
-//                      System.out.println(ret);
+//                        System.out.println(ret);
                         out.collect(ret);
                     }
                 });
@@ -130,7 +158,6 @@ public class Query2 {
         env.execute("DEBS 2020: Query 2");
         System.out.println("Query 2 complete.");
         requests.get();
-        System.out.println("Results for both queries: " + requests.get("/score/all")); //Get full score for query1 and query2
     }
 
     public static void main(String[] args) throws Exception {
