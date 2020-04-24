@@ -65,12 +65,12 @@ public class Query2 {
             @Override
             public void cancel() {}
         })
-        .assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor<Tuple3<Long, Double, Double>>(Time.milliseconds(20000)) {
-            @Override
-            public long extractTimestamp(Tuple3<Long, Double, Double> element) {
-                return element.f0;
-            }
-        });
+                .assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor<Tuple3<Long, Double, Double>>(Time.milliseconds(20000)) {
+                    @Override
+                    public long extractTimestamp(Tuple3<Long, Double, Double> element) {
+                        return element.f0;
+                    }
+                });
 
         DataStream<Tuple3<Long, Double, Double>> features = input
                 .windowAll(SlidingEventTimeWindows.of(Time.milliseconds(windowSize), Time.milliseconds(windowSize))).allowedLateness(Time.milliseconds(20000))
@@ -121,20 +121,8 @@ public class Query2 {
                             eventDetector.numWindowsProcessedSinceLastEventDetected = 0;
                             w2_builder.clear();
                         }
-//
-//                        long old = eventDetector.countedSoFar; //7
-//                        long current = ret.f0; // 10
-//                        for(long i = old+1; i < current; i++ ){
-//                            requests.post(new Result(i, false, -1));
-//                        }
-//
-//
-//
-//                        eventDetector.countedSoFar = current;
-
-
                         requests.post(new Result(ret.f0, ret.f1, ret.f2));
-                        //System.out.println(ret);
+//                      System.out.println(ret);
                         out.collect(ret);
                     }
                 });
